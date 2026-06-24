@@ -1,0 +1,54 @@
+{
+  "name": "219",
+  "version": "2.0.0",
+  "description": "219 - فلش‌کارت هوشمند با تکرار فاصله‌دار",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux",
+    "serve": "npx serve src -p 3000"
+  },
+  "build": {
+    "appId": "com.app219.flashcards",
+    "productName": "219",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "src/**/*", "node_modules/**/*"],
+    "win": {
+      "target": ["nsis"],
+      "icon": "src/icons/icon.png",
+      "artifactName": "219-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "src/icons/icon.png",
+      "artifactName": "219-${version}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "src/icons/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "219",
+      "releaseType": "release"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0"
+  }
+}

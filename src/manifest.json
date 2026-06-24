@@ -1,0 +1,17 @@
+{
+  "name": "219 - فلش‌کارت هوشمند",
+  "short_name": "219",
+  "description": "یادگیری کلمات با تکرار فاصله‌دار هوشمند",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080810",
+  "theme_color": "#7c6ff7",
+  "orientation": "any",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": []
+}
