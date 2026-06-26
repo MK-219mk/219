@@ -1,7 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="80" fill="#1a1a2e"/>
-  <text x="256" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="140" font-weight="900" fill="#6c5ce7">219</text>
-  <text x="256" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#a29bfe">⚡</text>
-  <rect x="100" y="380" width="312" height="6" rx="3" fill="#2a2a44"/>
-  <rect x="100" y="380" width="187" height="6" rx="3" fill="#6c5ce7"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#111111"/>
+  <!-- Persian ۲۱۹ text -->
+  <text
+    x="256"
+    y="320"
+    text-anchor="middle"
+    font-family="'Geeza Pro', 'Noto Naskh Arabic', 'Segoe UI', Arial, sans-serif"
+    font-size="240"
+    font-weight="900"
+    fill="#ffffff"
+    letter-spacing="-8"
+  >۲۱۹</text>
+  <!-- Thin white border line at bottom -->
+  <rect x="80" y="370" width="352" height="4" rx="2" fill="#ffffff" opacity="0.25"/>
 </svg>

@@ -95,6 +95,21 @@
   --pink: #fb923c;
 }
 
+/* رنگ‌های شب — accent overrides */
+[data-accent="mint"] { --accent:#00c9a7; --accent2:#34d9b8; --accent-dim:rgba(0,201,167,0.13); --accent-glow:rgba(0,201,167,0.3); }
+[data-accent="neon"] { --accent:#a78bfa; --accent2:#c4b5fd; --accent-dim:rgba(167,139,250,0.13); --accent-glow:rgba(167,139,250,0.3); }
+[data-accent="amber"] { --accent:#f59e0b; --accent2:#fbbf24; --accent-dim:rgba(245,158,11,0.13); --accent-glow:rgba(245,158,11,0.3); }
+[data-accent="rose"] { --accent:#f43f5e; --accent2:#fb7185; --accent-dim:rgba(244,63,94,0.13); --accent-glow:rgba(244,63,94,0.3); }
+[data-accent="cyan"] { --accent:#06b6d4; --accent2:#22d3ee; --accent-dim:rgba(6,182,212,0.13); --accent-glow:rgba(6,182,212,0.3); }
+[data-accent="green"] { --accent:#22c55e; --accent2:#4ade80; --accent-dim:rgba(34,197,94,0.13); --accent-glow:rgba(34,197,94,0.3); }
+/* رنگ‌های روز */
+[data-accent="blue"]   { --accent:#3b82f6; --accent2:#60a5fa; --accent-dim:rgba(59,130,246,0.13); --accent-glow:rgba(59,130,246,0.28); }
+[data-accent="violet"] { --accent:#7c3aed; --accent2:#8b5cf6; --accent-dim:rgba(124,58,237,0.13); --accent-glow:rgba(124,58,237,0.28); }
+[data-accent="pink"]   { --accent:#ec4899; --accent2:#f472b6; --accent-dim:rgba(236,72,153,0.13); --accent-glow:rgba(236,72,153,0.28); }
+[data-accent="teal"]   { --accent:#0d9488; --accent2:#14b8a6; --accent-dim:rgba(13,148,136,0.13); --accent-glow:rgba(13,148,136,0.28); }
+[data-accent="orange"] { --accent:#ea580c; --accent2:#f97316; --accent-dim:rgba(234,88,12,0.13); --accent-glow:rgba(234,88,12,0.28); }
+[data-accent="indigo"] { --accent:#4f46e5; --accent2:#6366f1; --accent-dim:rgba(79,70,229,0.13); --accent-glow:rgba(79,70,229,0.28); }
+
 /* ===========================
    BASE
 =========================== */
@@ -806,43 +821,195 @@ select option { background: var(--surface2); color: var(--text); }
 }
 
 /* === FLIP CLOCK — THEME-AWARE === */
+/* ===========================
+   FLIP CLOCK — PROPER 3D HALF-FLIP
+=========================== */
 .flip-clock { display: flex; align-items: center; gap: 7px; direction: ltr; }
 .flip-unit { display: flex; gap: 4px; }
 
 .flip-digit {
   position: relative; width: 58px; height: 84px;
-  border-radius: 10px; overflow: hidden;
+  border-radius: 10px;
   box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  perspective: 300px;
 }
-.flip-digit .fd-top, .flip-digit .fd-bot {
-  position: absolute; left: 0; right: 0; height: 50%;
+
+/* نیمه پایین — عدد فعلی (همیشه دیده می‌شود) */
+.flip-digit .fd-bot {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+  display: flex; align-items: flex-start; justify-content: center;
+  overflow: hidden; font-size: 40px; font-weight: 900;
+  color: var(--text); font-family: 'Courier New', monospace;
+  background: var(--surface3);
+  border-radius: 0 0 10px 10px;
+  z-index: 1;
+}
+.flip-digit .fd-bot span { display: block; transform: translateY(-50%); }
+
+/* نیمه بالا — عدد فعلی (پشت صحنه، وقتی انیمیشن نیست) */
+.flip-digit .fd-top {
+  position: absolute; top: 0; left: 0; right: 0; height: 50%;
   display: flex; align-items: flex-end; justify-content: center;
   overflow: hidden; font-size: 40px; font-weight: 900;
-  color: var(--text);
-  font-family: 'Courier New', monospace;
-}
-/* theme-aware flip clock backgrounds */
-.flip-digit .fd-top {
-  top: 0;
+  color: var(--text); font-family: 'Courier New', monospace;
   background: var(--surface2);
-  align-items: flex-end;
   border-bottom: 1.5px solid var(--border);
   border-radius: 10px 10px 0 0;
-}
-.flip-digit .fd-bot {
-  bottom: 0;
-  background: var(--surface3);
-  align-items: flex-start;
-  border-radius: 0 0 10px 10px;
+  z-index: 2;
 }
 .flip-digit .fd-top span { display: block; transform: translateY(50%); }
-.flip-digit .fd-bot span { display: block; transform: translateY(-50%); }
-.flip-digit.flip-anim { animation: flipDigit 0.28s ease; }
-@keyframes flipDigit {
-  0% { transform: scaleY(1); }
-  40% { transform: scaleY(0.05); }
-  60% { transform: scaleY(0.05); }
-  100% { transform: scaleY(1); }
+
+/* کارت متحرک — نیمه بالایی عدد قدیمی که رو به پایین می‌چرخد */
+.flip-digit .fd-flip {
+  position: absolute; top: 0; left: 0; right: 0; height: 50%;
+  display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden; font-size: 40px; font-weight: 900;
+  color: var(--text); font-family: 'Courier New', monospace;
+  background: var(--surface2);
+  border-bottom: 1.5px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  z-index: 4;
+  transform-origin: center bottom;
+  transform-style: preserve-3d;
+  animation: flipDown 0.4s cubic-bezier(0.4,0,0.2,1) forwards;
+  backface-visibility: hidden;
+}
+.flip-digit .fd-flip span { display: block; transform: translateY(50%); }
+
+/* پشت کارت متحرک — نیمه بالایی عدد جدید */
+.flip-digit .fd-flip-back {
+  position: absolute; top: 0; left: 0; right: 0; height: 50%;
+  display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden; font-size: 40px; font-weight: 900;
+  color: var(--text); font-family: 'Courier New', monospace;
+  background: var(--surface2);
+  border-bottom: 1.5px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  z-index: 3;
+  transform-origin: center bottom;
+  transform-style: preserve-3d;
+  transform: rotateX(90deg);
+  animation: flipUp 0.4s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation-delay: 0.2s;
+  backface-visibility: hidden;
+}
+.flip-digit .fd-flip-back span { display: block; transform: translateY(50%); }
+
+@keyframes flipDown {
+  0%   { transform: rotateX(0deg); }
+  100% { transform: rotateX(90deg); }
+}
+@keyframes flipUp {
+  0%   { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+/* نیمه پایین عدد جدید که در لحظه تغییر پشت صحنه ظاهر می‌شود */
+.flip-digit .fd-bot-next {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+  display: flex; align-items: flex-start; justify-content: center;
+  overflow: hidden; font-size: 40px; font-weight: 900;
+  color: var(--text); font-family: 'Courier New', monospace;
+  background: var(--surface3);
+  border-radius: 0 0 10px 10px;
+  z-index: 5;
+  animation: revealBot 0s 0.2s forwards;
+  opacity: 0;
+}
+.flip-digit .fd-bot-next span { display: block; transform: translateY(-50%); }
+@keyframes revealBot { to { opacity: 1; } }
+
+/* ساعت دیجیتال ساده */
+.digital-clock {
+  font-size: 72px; font-weight: 900; letter-spacing: 4px;
+  font-family: 'Courier New', monospace; direction: ltr;
+  color: var(--accent); text-shadow: 0 0 30px var(--accent-glow);
+}
+/* ساعت آنالوگ */
+.analog-clock {
+  position: relative; width: 180px; height: 180px;
+  border-radius: 50%;
+  border: 3px solid var(--border2);
+  background: var(--surface2);
+  box-shadow: var(--sh);
+}
+.analog-clock .hand {
+  position: absolute; bottom: 50%; left: 50%;
+  transform-origin: bottom center;
+  border-radius: 4px;
+}
+.analog-clock .hand-h { width: 5px; height: 52px; background: var(--text); margin-left: -2.5px; }
+.analog-clock .hand-m { width: 3px; height: 72px; background: var(--accent); margin-left: -1.5px; }
+.analog-clock .hand-s { width: 2px; height: 76px; background: var(--red); margin-left: -1px; }
+.analog-clock .center-dot {
+  position: absolute; top: 50%; left: 50%;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); transform: translate(-50%,-50%); z-index: 10;
+}
+.analog-clock .tick {
+  position: absolute; width: 2px; background: var(--border2);
+  left: 50%; transform-origin: bottom center;
+  bottom: 50%;
+}
+/* clock mode selector */
+.clock-mode-btns {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+}
+.clock-mode-btn {
+  padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: var(--surface2); color: var(--text2); cursor: pointer;
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.clock-mode-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.clock-mode-btn.active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+  box-shadow: 0 3px 12px var(--accent-glow);
+  pointer-events: none;
+}
+
+/* about modal */
+.about-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 900; display: flex; align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease;
+}
+.about-modal {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 28px; width: 100%; max-width: 420px;
+  padding: 28px; box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  text-align: center;
+}
+.about-logo {
+  width: 70px; height: 70px; border-radius: 20px;
+  background: #111; border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 900; color: #fff;
+  margin: 0 auto 16px; letter-spacing: -1px;
+  font-family: 'Courier New', monospace;
+}
+.about-title { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+.about-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+.about-body { font-size: 14px; color: var(--text2); line-height: 1.9; text-align: right; }
+
+/* accent color themes */
+.accent-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.accent-dot {
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+  border: 2.5px solid transparent; transition: transform var(--spring), border-color 0.15s;
+  flex-shrink: 0; position: relative;
+}
+.accent-dot:hover { transform: scale(1.2); }
+.accent-dot.active { border-color: var(--text); transform: scale(1.1); }
+.accent-dot.active::after {
+  content: '✓'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff; font-weight: 900;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 .flip-sep {
   font-size: 34px; font-weight: 900; color: var(--accent);
@@ -1114,11 +1281,9 @@ body.timer-fs #fsExitBtn { display: flex; }
 <div id="app">
 
   <header>
-    <div class="logo-wrap">
-      <div class="logo-icon">219</div>
-      <div>
-        <div class="logo-text">۲۱۹</div>
-        <div class="logo-sub">فلش‌کارت هوشمند</div>
+    <div class="logo-wrap" onclick="showAbout()" style="cursor:pointer" title="درباره ما">
+      <div class="logo-icon" style="background:#111;border:2px solid #333;font-family:'Courier New',monospace;color:#fff;font-size:15px;letter-spacing:-1px;flex-direction:column;gap:0;line-height:1">
+        <span style="font-size:18px;font-weight:900;color:#fff">۲۱۹</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1126,6 +1291,19 @@ body.timer-fs #fsExitBtn { display: flex; }
       <button class="btn btn-ghost btn-sm" onclick="toggleLang()">🌐 <span id="langLabel">EN</span></button>
     </div>
   </header>
+
+  <!-- About Modal -->
+  <div id="aboutOverlay" style="display:none" class="about-overlay" onclick="if(event.target===this)closeAbout()">
+    <div class="about-modal">
+      <div class="about-logo">۲۱۹</div>
+      <div class="about-title">فلش‌کارت هوشمند ۲۱۹</div>
+      <div class="about-sub">نسخه <span id="aboutVersion">2.1.0</span></div>
+      <div class="about-body">
+        <p>به زودی محتوای «درباره ما» اضافه می‌شود.</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="closeAbout()" style="margin-top:20px;width:100%">بستن</button>
+    </div>
+  </div>
 
   <!-- Floating search notice -->
   <div id="searchFloatMsg">🔍 چنین کلمه‌ای پیدا نشد</div>
@@ -1162,7 +1340,7 @@ body.timer-fs #fsExitBtn { display: flex; }
       <span>⚙️</span><span class="nav-label" data-i18n="tabSettings">تنظیمات</span>
     </button>
     <button class="nav-btn" data-tab="timer" role="tab">
-      <span>⏱️</span><span class="nav-label" data-i18n="tabTimer">زمان و ساعت</span>
+      <span>⏱️</span><span class="nav-label">ساعت</span>
     </button>
     <button class="nav-btn" data-tab="help" role="tab">
       <span>❓</span><span class="nav-label" data-i18n="tabHelp">راهنما</span>
@@ -1324,8 +1502,40 @@ body.timer-fs #fsExitBtn { display: flex; }
         </div>
         <button id="themeToggleBig" onclick="toggleDarkLight()" style="display:flex;align-items:center;gap:10px;padding:10px 20px;border-radius:30px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;font-family:inherit;font-size:15px;transition:all .2s;color:var(--text)">
           <span id="themeToggleBigIcon">🌙</span>
-          <span id="themeToggleBigLabel" style="font-size:13px;font-weight:700;color:var(--text2)">رفتن به تاریک</span>
+          <span id="themeToggleBigLabel" style="font-size:13px;font-weight:700;color:var(--text2)">رفتن به روشن</span>
         </button>
+      </div>
+      <!-- رنگ حالت شب -->
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="settings-row-info">
+          <label>🌙 رنگ حالت شب</label>
+          <div class="desc">رنگ دکمه‌ها و تأکیدها در حالت تاریک</div>
+        </div>
+        <div class="accent-grid" id="darkAccentGrid">
+          <div class="accent-dot" style="background:#7c6ff7" data-accent="" onclick="setAccent('','dark')" title="بنفش (پیش‌فرض)"></div>
+          <div class="accent-dot" style="background:#00c9a7" data-accent="mint" onclick="setAccent('mint','dark')" title="نعنایی"></div>
+          <div class="accent-dot" style="background:#a78bfa" data-accent="neon" onclick="setAccent('neon','dark')" title="بنفش نئون"></div>
+          <div class="accent-dot" style="background:#f59e0b" data-accent="amber" onclick="setAccent('amber','dark')" title="کهربایی"></div>
+          <div class="accent-dot" style="background:#f43f5e" data-accent="rose" onclick="setAccent('rose','dark')" title="رز"></div>
+          <div class="accent-dot" style="background:#06b6d4" data-accent="cyan" onclick="setAccent('cyan','dark')" title="فیروزه‌ای"></div>
+          <div class="accent-dot" style="background:#22c55e" data-accent="green" onclick="setAccent('green','dark')" title="سبز"></div>
+        </div>
+      </div>
+      <!-- رنگ حالت روز -->
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="settings-row-info">
+          <label>☀️ رنگ حالت روز</label>
+          <div class="desc">رنگ دکمه‌ها و تأکیدها در حالت روشن</div>
+        </div>
+        <div class="accent-grid" id="lightAccentGrid">
+          <div class="accent-dot" style="background:#6255e0" data-accent="" onclick="setAccent('','light')" title="بنفش (پیش‌فرض)"></div>
+          <div class="accent-dot" style="background:#3b82f6" data-accent="blue" onclick="setAccent('blue','light')" title="آبی"></div>
+          <div class="accent-dot" style="background:#7c3aed" data-accent="violet" onclick="setAccent('violet','light')" title="بنفش تیره"></div>
+          <div class="accent-dot" style="background:#ec4899" data-accent="pink" onclick="setAccent('pink','light')" title="صورتی"></div>
+          <div class="accent-dot" style="background:#0d9488" data-accent="teal" onclick="setAccent('teal','light')" title="کبود"></div>
+          <div class="accent-dot" style="background:#ea580c" data-accent="orange" onclick="setAccent('orange','light')" title="نارنجی"></div>
+          <div class="accent-dot" style="background:#4f46e5" data-accent="indigo" onclick="setAccent('indigo','light')" title="نیلی"></div>
+        </div>
       </div>
     </div>
 
@@ -1474,8 +1684,8 @@ body.timer-fs #fsExitBtn { display: flex; }
   <!-- ========== TIMER ========== -->
   <div class="page" id="page-timer" role="tabpanel">
     <div class="section-head">
-      <div class="section-title"><span class="icon">⏱️</span><span>زمان‌سنج و ساعت</span></div>
-      <button class="btn btn-ghost btn-sm" id="fullscreenBtn" onclick="toggleFullscreen()" title="تمام صفحه">⛶ تمام صفحه</button>
+      <div class="section-title"><span class="icon">🕐</span><span>ساعت و زمان‌سنج</span></div>
+      <button class="btn btn-ghost btn-sm" id="fullscreenBtn" onclick="toggleFullscreen()">⛶ تمام صفحه</button>
     </div>
     <div class="timer-nav" id="timerNav">
       <button class="timer-tab-btn active" data-tmode="clock" onclick="switchTimerMode('clock')">🕐 <span data-i18n="clock">ساعت</span></button>
@@ -1491,33 +1701,8 @@ body.timer-fs #fsExitBtn { display: flex; }
     <div class="section-head">
       <div class="section-title"><span class="icon">❓</span><span data-i18n="help">راهنما</span></div>
     </div>
-    <div class="help-article">
-      <h3>🧠 درباره ۲۱۹</h3>
-      <p>یک اپلیکیشن فلش‌کارت هوشمند با الگوریتم <strong>FSRS</strong> (Free Spaced Repetition Scheduler) است — پیشرفته‌ترین الگوریتم یادگیری فاصله‌دار در دنیا. داده‌های شما فقط در مرورگر خودتان ذخیره می‌شود.</p>
-
-      <h3>📚 بخش‌های برنامه</h3>
-      <p>▸ <strong>همه:</strong> جستجو، فیلتر و مدیریت کارت‌ها</p>
-      <p>▸ <strong>افزودن:</strong> کارت جدید بسازید یا کارت موجود را ویرایش کنید</p>
-      <p>▸ <strong>مطالعه:</strong> مرور هوشمند با الگوریتم FSRS</p>
-      <p>▸ <strong>دسته‌ها:</strong> کارت‌ها را گروه‌بندی کنید</p>
-      <p>▸ <strong>آمار:</strong> پیشرفت یادگیری خود را ببینید</p>
-      <p>▸ <strong>تایمر:</strong> ساعت فلیپ‌کلاک، کرنومتر و شمارش معکوس</p>
-
-      <h3>🎯 الگوریتم مرور FSRS</h3>
-      <p>بعد از دیدن جواب، به یادآوری خود امتیاز بدهید:</p>
-      <p>❌ <strong>فراموش کردم (1):</strong> کارت فوری تکرار می‌شود</p>
-      <p>😐 <strong>سخت بود (2):</strong> فاصله کوتاه با کاهش ضریب</p>
-      <p>✅ <strong>به یاد آوردم (3):</strong> فاصله متوسط</p>
-      <p>💡 <strong>راحت بود (4):</strong> فاصله بلند</p>
-      <p>⭐ <strong>کاملاً حفظم (5):</strong> فاصله خیلی بلند</p>
-
-      <h3>📥 ورودی فایل</h3>
-      <p>می‌توانید <strong>دسته مقصد</strong> را قبل از ورودی انتخاب کنید. از JSON، CSV و Tab-separated پشتیبانی می‌کند.</p>
-
-      <h3>⌨️ کلیدهای میانبر</h3>
-      <p><kbd>Space</kbd> — برگرداندن کارت</p>
-      <p><kbd>1</kbd>–<kbd>5</kbd> — امتیاز دادن به کارت</p>
-      <p><kbd>N</kbd> — افزودن &nbsp; <kbd>S</kbd> — مطالعه &nbsp; <kbd>B</kbd> — همه کارت‌ها</p>
+    <div class="help-article" id="helpContent">
+      <!-- محتوا با JS رندر می‌شود تا با زبان همگام باشد -->
     </div>
   </div>
 
@@ -1533,7 +1718,7 @@ body.timer-fs #fsExitBtn { display: flex; }
 //  219 v2.1 — Enhanced FSRS + UI fixes
 // ============================================================
 
-var APP_VERSION = '2.1.0';
+var APP_VERSION = '2.0.0';
 var STORE_KEY = '219_data_v2';
 var SETTINGS_KEY = '219_settings_v2';
 var THEME_KEY = '219_theme_v2';
@@ -1612,6 +1797,23 @@ var T = {
     newCard:'جدید', day:'روز', month:'ماه', year:'سال',
     confirmDelete:'حذف شود؟', reviewAgain:'مرور دوباره',
     noCardsInCat:'کارتی در این دسته نیست',
+    tabTimer:'ساعت', timerTitle:'ساعت و زمان‌سنج',
+    clock:'ساعت فلیپ', stopwatch:'زمان‌سنج', countdown:'شمارش معکوس',
+    swStart:'شروع', swStop:'توقف', swReset:'بازنشانی', swLap:'نقطه', noLaps:'هنوز نقطه‌ای ثبت نشده',
+    cdStart:'شروع', cdPause:'مکث', cdResume:'ادامه', cdReset:'بازنشانی',
+    cdDone:'زمان تمام شد! ⏰', selectPreset:'یک برچسب انتخاب کن',
+    presets:'برچسب‌ها', addPreset:'برچسب جدید', presetName:'نام', presetTime:'دقیقه',
+    appearanceSection:'ظاهر برنامه', studySection:'تنظیمات مطالعه',
+    audioSection:'صدا و تلفظ', dataSection:'مدیریت داده‌ها', updateSection:'بروزرسانی',
+    darkAccent:'رنگ حالت شب', lightAccent:'رنگ حالت روز',
+    displayMode:'حالت نمایش', switchToLight:'رفتن به روشن', switchToDark:'رفتن به تاریک',
+    voiceLoad:'بارگذاری صداها', voiceTest:'آزمایش صدا',
+    readSpeed:'سرعت خواندن', voiceSelector:'صدای خواننده',
+    importDest:'ذخیره در دسته', importBtn:'انتخاب فایل',
+    onlineStatus:'وضعیت اینترنت', onlineOk:'متصل به اینترنت', offlineMsg:'بدون اینترنت',
+    checkUpdate:'🔍 بررسی', currentVersion:'نسخه فعلی',
+    fullscreen:'تمام صفحه', exitFullscreen:'خروج',
+    clockFlip:'فلیپ', clockDigital:'دیجیتال', clockAnalog:'آنالوگ',
   },
   en: {
     tabBrowse:'Browse', tabAdd:'Add', tabStudy:'Study', tabCats:'Cats',
@@ -1662,6 +1864,23 @@ var T = {
     newCard:'New', day:'d', month:'mo', year:'yr',
     confirmDelete:'Delete?', reviewAgain:'Review Again',
     noCardsInCat:'No cards in this category',
+    tabTimer:'Clock', timerTitle:'Clock & Timer',
+    clock:'Flip Clock', stopwatch:'Stopwatch', countdown:'Countdown',
+    swStart:'Start', swStop:'Stop', swReset:'Reset', swLap:'Split', noLaps:'No splits yet',
+    cdStart:'Start', cdPause:'Pause', cdResume:'Resume', cdReset:'Reset',
+    cdDone:'Time is up! ⏰', selectPreset:'Select a preset',
+    presets:'Presets', addPreset:'New Preset', presetName:'Name', presetTime:'Minutes',
+    appearanceSection:'Appearance', studySection:'Study Settings',
+    audioSection:'Audio & Voice', dataSection:'Data Management', updateSection:'Updates',
+    darkAccent:'Dark Mode Color', lightAccent:'Light Mode Color',
+    displayMode:'Display Mode', switchToLight:'Switch to Light', switchToDark:'Switch to Dark',
+    voiceLoad:'Load Voices', voiceTest:'Test Voice',
+    readSpeed:'Reading Speed', voiceSelector:'Voice',
+    importDest:'Save to Category', importBtn:'Choose File',
+    onlineStatus:'Internet Status', onlineOk:'Connected', offlineMsg:'Offline',
+    checkUpdate:'🔍 Check', currentVersion:'Version',
+    fullscreen:'Fullscreen', exitFullscreen:'Exit',
+    clockFlip:'Flip', clockDigital:'Digital', clockAnalog:'Analog',
   }
 };
 
@@ -1825,6 +2044,8 @@ function loadSettings() {
   if (settings.enableAudio!==undefined) $('enableAudio').checked=settings.enableAudio;
   if (settings.autoAdvance!==undefined) $('autoAdvance').checked=settings.autoAdvance;
   if (settings.showKbHints!==undefined) $('showKbHints').checked=settings.showKbHints;
+  if (settings.accent_dark !== undefined) currentAccent.dark = settings.accent_dark;
+  if (settings.accent_light !== undefined) currentAccent.light = settings.accent_light;
   currentLang = settings.lang||'fa';
   updateSpeedDisplay();
   updateRateDisplay();
@@ -1857,6 +2078,7 @@ function applyTheme(name) {
   document.documentElement.setAttribute('data-theme', name);
   localStorage.setItem(THEME_KEY, name);
   themeIdx = name === 'light' ? 1 : 0;
+  applyAccentForTheme();
   updateThemeToggleUI();
 }
 
@@ -1893,6 +2115,7 @@ function toggleLang() {
   renderCards(); updateStats(); renderCats(); populateCatDropdowns();
   if(currentTab==='study') startStudy();
   if(currentTab==='timer') renderTimerMode();
+  if(currentTab==='help') renderHelp();
 }
 
 function updateAllText() {
@@ -1915,8 +2138,97 @@ function switchTab(name) {
   if(name==='stats') updateStats();
   if(name==='cats') renderCats();
   if(name==='timer'){ renderTimerMode(); startClock(); }
+  if(name==='help') renderHelp();
   if(name!=='timer') stopClock();
   window.scrollTo(0,0);
+}
+
+function renderHelp() {
+  var el=$('helpContent'); if(!el) return;
+  var fa = currentLang==='fa';
+  var html = fa ? `
+    <h3>🧠 درباره ۲۱۹</h3>
+    <p>یک اپلیکیشن فلش‌کارت هوشمند با الگوریتم <strong>FSRS</strong> است. داده‌های شما فقط در مرورگر خودتان ذخیره می‌شود و هیچ‌جا ارسال نمی‌گردد.</p>
+
+    <h3>📚 بخش‌های برنامه</h3>
+    <p>▸ <strong>همه:</strong> جستجو، فیلتر و مدیریت کارت‌ها — جستجو حتی اشتباه املایی را هم پیدا می‌کند</p>
+    <p>▸ <strong>افزودن:</strong> کارت جدید بسازید یا کارت موجود را ویرایش کنید</p>
+    <p>▸ <strong>مطالعه:</strong> مرور هوشمند با الگوریتم FSRS — بازه مرور بعدی زیر هر دکمه نشان داده می‌شود</p>
+    <p>▸ <strong>دسته‌ها:</strong> کارت‌ها را با رنگ و آیکون دلخواه گروه‌بندی کنید</p>
+    <p>▸ <strong>آمار:</strong> پیشرفت یادگیری و streak روزانه خود را ببینید</p>
+    <p>▸ <strong>ساعت:</strong> سه مدل نمایش ساعت، زمان‌سنج با نقطه‌گذاری و شمارش معکوس با برچسب رنگی</p>
+    <p>▸ <strong>تنظیمات:</strong> رنگ، صدا، سرعت یادگیری و مدیریت داده‌ها</p>
+
+    <h3>🎯 الگوریتم FSRS چطور کار می‌کند؟</h3>
+    <p>FSRS مخفف <strong>Free Spaced Repetition Scheduler</strong> است. ایده اصلی ساده است:</p>
+    <p>🧠 <strong>مغز فراموش می‌کند</strong> — اما اگر درست قبل از فراموش کردن، چیزی را مرور کنی، قوی‌تر در حافظه می‌ماند.</p>
+    <p>📈 <strong>هر بار که مرور می‌کنی</strong>، فاصله تا مرور بعدی بیشتر می‌شود — مثلاً ۱ روز، بعد ۴ روز، بعد ۱۵ روز، بعد ۶۰ روز...</p>
+    <p>FSRS از دو فاکتور برای هر کارت استفاده می‌کند:</p>
+    <p>▸ <strong>پایداری (Stability):</strong> چقدر این اطلاعات در حافظه ماندگار است</p>
+    <p>▸ <strong>سختی (Difficulty):</strong> این کارت برای تو چقدر سخت است</p>
+
+    <h3>⭐ امتیازدهی در مطالعه</h3>
+    <p>❌ <strong>فراموش کردم (۱):</strong> از اول شروع می‌شود — همین جلسه دوباره نشان داده می‌شود</p>
+    <p>😐 <strong>سخت بود (۲):</strong> فاصله کوتاه — سختی کارت بالا می‌رود</p>
+    <p>✅ <strong>به یاد آوردم (۳):</strong> فاصله متوسط — بر اساس پایداری محاسبه می‌شود</p>
+    <p>💡 <strong>راحت بود (۴):</strong> فاصله بلند — سختی کارت پایین می‌آید</p>
+    <p>⭐ <strong>کاملاً حفظم (۵):</strong> فاصله خیلی بلند — پایداری زیاد می‌شود</p>
+
+    <h3>📥 ورودی فایل</h3>
+    <p>در تنظیمات، <strong>دسته مقصد</strong> را انتخاب کن و بعد فایل را وارد کن. از JSON، CSV و Anki (Tab-separated) پشتیبانی می‌کند.</p>
+
+    <h3>⌨️ کلیدهای میانبر</h3>
+    <p><kbd>Space</kbd> — برگرداندن کارت &nbsp; <kbd>1</kbd>–<kbd>5</kbd> — امتیاز</p>
+    <p><kbd>N</kbd> — افزودن &nbsp; <kbd>S</kbd> — مطالعه &nbsp; <kbd>B</kbd> — همه کارت‌ها</p>
+
+    <h3>📖 برای کنجکاوان — منابع بیشتر درباره FSRS</h3>
+    <p>اگر می‌خواهی عمیق‌تر درباره این الگوریتم بدانی:</p>
+    <p>▸ <strong>مقاله اصلی FSRS:</strong> <a href="https://arxiv.org/abs/2402.04300" target="_blank" style="color:var(--accent)">arxiv.org/abs/2402.04300</a> — مقاله علمی منتشرشده توسط سازندگان الگوریتم</p>
+    <p>▸ <strong>مخزن GitHub:</strong> <a href="https://github.com/open-spaced-repetition/fsrs4anki" target="_blank" style="color:var(--accent)">open-spaced-repetition/fsrs4anki</a> — کد منبع باز و مستندات کامل</p>
+    <p>▸ <strong>منحنی فراموشی Ebbinghaus:</strong> <a href="https://en.wikipedia.org/wiki/Forgetting_curve" target="_blank" style="color:var(--accent)">Wikipedia — Forgetting Curve</a> — پایه علمی یادگیری فاصله‌دار</p>
+    <p>▸ <strong>تحقیق SuperMemo:</strong> <a href="https://www.supermemo.com/en/blog/twenty-rules-of-formulating-knowledge" target="_blank" style="color:var(--accent)">supermemo.com</a> — ۲۰ قانون برای فرمول‌بندی بهتر دانش</p>
+  ` : `
+    <h3>🧠 About 219</h3>
+    <p>A smart flashcard app using the <strong>FSRS</strong> (Free Spaced Repetition Scheduler) algorithm. Your data is stored only in your browser — never sent anywhere.</p>
+
+    <h3>📚 Sections</h3>
+    <p>▸ <strong>Browse:</strong> Search, filter and manage cards — fuzzy search finds words even with typos</p>
+    <p>▸ <strong>Add:</strong> Create new cards or edit existing ones</p>
+    <p>▸ <strong>Study:</strong> Smart review with FSRS — next interval shown below each rating button</p>
+    <p>▸ <strong>Categories:</strong> Organize cards with colors and icons</p>
+    <p>▸ <strong>Stats:</strong> Track learning progress and daily streak</p>
+    <p>▸ <strong>Clock:</strong> Three clock modes, stopwatch with splits, countdown with color labels</p>
+    <p>▸ <strong>Settings:</strong> Colors, audio, learning speed and data management</p>
+
+    <h3>🎯 How FSRS Works</h3>
+    <p>FSRS stands for <strong>Free Spaced Repetition Scheduler</strong>. The core idea is simple:</p>
+    <p>🧠 <strong>The brain forgets</strong> — but if you review something just before you forget it, it gets stored much stronger.</p>
+    <p>📈 <strong>Each time you review</strong>, the gap until next review grows — e.g. 1 day, then 4 days, then 15 days, then 60 days...</p>
+    <p>FSRS tracks two factors per card:</p>
+    <p>▸ <strong>Stability:</strong> How well this memory will hold over time</p>
+    <p>▸ <strong>Difficulty:</strong> How hard this card is for you personally</p>
+
+    <h3>⭐ Rating Your Recall</h3>
+    <p>❌ <strong>Forgot (1):</strong> Resets — shown again this session</p>
+    <p>😐 <strong>Hard (2):</strong> Short interval — difficulty increases</p>
+    <p>✅ <strong>Good (3):</strong> Medium interval — based on stability</p>
+    <p>💡 <strong>Easy (4):</strong> Long interval — difficulty decreases</p>
+    <p>⭐ <strong>Perfect (5):</strong> Very long interval — stability grows a lot</p>
+
+    <h3>📥 File Import</h3>
+    <p>In Settings, choose a <strong>target category</strong> first, then import. Supports JSON, CSV and Anki (Tab-separated).</p>
+
+    <h3>⌨️ Keyboard Shortcuts</h3>
+    <p><kbd>Space</kbd> — flip card &nbsp; <kbd>1</kbd>–<kbd>5</kbd> — rate</p>
+    <p><kbd>N</kbd> — add &nbsp; <kbd>S</kbd> — study &nbsp; <kbd>B</kbd> — browse</p>
+
+    <h3>📖 Learn More About FSRS</h3>
+    <p>▸ <strong>Original Paper:</strong> <a href="https://arxiv.org/abs/2402.04300" target="_blank" style="color:var(--accent)">arxiv.org/abs/2402.04300</a> — The scientific paper by FSRS creators</p>
+    <p>▸ <strong>GitHub Repository:</strong> <a href="https://github.com/open-spaced-repetition/fsrs4anki" target="_blank" style="color:var(--accent)">open-spaced-repetition/fsrs4anki</a> — Open source code and full docs</p>
+    <p>▸ <strong>Ebbinghaus Forgetting Curve:</strong> <a href="https://en.wikipedia.org/wiki/Forgetting_curve" target="_blank" style="color:var(--accent)">Wikipedia</a> — The science behind spaced repetition</p>
+    <p>▸ <strong>SuperMemo Research:</strong> <a href="https://www.supermemo.com/en/blog/twenty-rules-of-formulating-knowledge" target="_blank" style="color:var(--accent)">supermemo.com</a> — 20 rules for better knowledge formulation</p>
+  `;
+  el.innerHTML = html;
 }
 
 // ===== CATEGORIES =====
@@ -2516,13 +2828,27 @@ function stripHtml(s) {
 // ===== UPDATES =====
 function checkForUpdates() {
   if(window.electronAPI){window.electronAPI.checkForUpdates();return;}
-  fetch('https://api.github.com/repos/YOUR_GITHUB_USERNAME/219/releases/latest',{cache:'no-cache'})
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.tag_name&&data.tag_name!=='v'+APP_VERSION&&data.tag_name!==APP_VERSION) showUpdateBanner(data.tag_name,data.html_url);
-      else toast('✅ '+(currentLang==='fa'?'آخرین نسخه را داری!':'Up to date!'),'success');
+  if(!navigator.onLine){toast('📵 اینترنت قطع است — بررسی ممکن نیست','error');return;}
+  toast('🔍 در حال بررسی...','info');
+  fetch('https://api.github.com/repos/MK-219mk/219/releases/latest',{cache:'no-cache'})
+    .then(function(r){
+      if(!r.ok) throw new Error('no release');
+      return r.json();
     })
-    .catch(function(){toast('❌ '+(currentLang==='fa'?'بررسی ناموفق بود':'Update check failed'),'error');});
+    .then(function(data){
+      if(!data.tag_name) { toast('✅ آخرین نسخه را داری!','success'); return; }
+      var remote = data.tag_name.replace('v','');
+      var date = data.published_at ? new Date(data.published_at).toLocaleDateString('fa-IR') : '';
+      if(remote !== APP_VERSION) {
+        showUpdateBanner(data.tag_name, data.html_url);
+        toast('🚀 نسخه '+remote+' موجود است'+(date?' — '+date:''),'info',4000);
+      } else {
+        toast('✅ آخرین نسخه را داری! ('+APP_VERSION+(date?' — '+date:'')+')', 'success');
+      }
+    })
+    .catch(function(){
+      toast('⚠️ بررسی ناموفق بود — به GitHub Pages متصل نشد','error');
+    });
 }
 
 function showUpdateBanner(version,url) {
@@ -2556,71 +2882,220 @@ function renderTimerMode() {
   else if(timerMode==='countdown') renderCountdown();
 }
 
-// --- Clock — theme-aware (uses CSS vars now) ---
+// ===== ACCENT COLOR =====
+var currentAccent = { dark: '', light: '' };
+
+function setAccent(accent, mode) {
+  currentAccent[mode] = accent;
+  settings['accent_'+mode] = accent;
+  saveSettings();
+  // apply immediately if current mode matches
+  var isDark = currentTheme !== 'light';
+  if ((isDark && mode === 'dark') || (!isDark && mode === 'light')) {
+    document.documentElement.setAttribute('data-accent', accent);
+  }
+  // update dots UI
+  var gridId = mode === 'dark' ? 'darkAccentGrid' : 'lightAccentGrid';
+  var grid = $(gridId); if (!grid) return;
+  var dots = grid.querySelectorAll('.accent-dot');
+  dots.forEach(function(d) { d.classList.toggle('active', d.getAttribute('data-accent') === accent); });
+  toast('🎨 رنگ تغییر کرد', 'info');
+}
+
+function applyAccentForTheme() {
+  var isDark = currentTheme !== 'light';
+  var accent = isDark ? (settings.accent_dark || '') : (settings.accent_light || '');
+  document.documentElement.setAttribute('data-accent', accent);
+  // update dot UI
+  ['dark','light'].forEach(function(mode) {
+    var gridId = mode === 'dark' ? 'darkAccentGrid' : 'lightAccentGrid';
+    var grid = $(gridId); if (!grid) return;
+    var saved = settings['accent_'+mode] || '';
+    var dots = grid.querySelectorAll('.accent-dot');
+    dots.forEach(function(d) { d.classList.toggle('active', d.getAttribute('data-accent') === saved); });
+  });
+}
+
+// ===== ABOUT MODAL =====
+function showAbout() {
+  var el = $('aboutOverlay'); if (!el) return;
+  var v = $('aboutVersion'); if (v) v.textContent = APP_VERSION;
+  el.style.display = 'flex';
+}
+function closeAbout() {
+  var el = $('aboutOverlay'); if (el) el.style.display = 'none';
+}
+
+// ===== CLOCK MODES =====
+var clockMode = 'flip'; // flip | digital | analog
+
+function switchClockMode(mode) {
+  clockMode = mode;
+  var btns = document.querySelectorAll('.clock-mode-btn');
+  btns.forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-cm') === mode); });
+  renderClock();
+}
+
+// --- Clock — theme-aware with multiple display modes ---
 function renderClock() {
   var body=$('timerBody'); if(!body||timerMode!=='clock') return;
   var now=new Date();
-  var h=pad2(now.getHours()), m=pad2(now.getMinutes()), s=pad2(now.getSeconds());
+  var h=now.getHours(), m=now.getMinutes(), s=now.getSeconds();
   var dateStr=now.toLocaleDateString(currentLang==='fa'?'fa-IR':'en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  var digits=[h[0],h[1],m[0],m[1],s[0],s[1]];
-  if(!body._lastDigits) body._lastDigits=['','','','','',''];
-  var html='<div class="flip-clock">';
-  html+=buildFlipUnit(digits,body._lastDigits,0);
-  html+='<span class="flip-sep">:</span>';
-  html+=buildFlipUnit(digits,body._lastDigits,2);
-  html+='<span class="flip-sep">:</span>';
-  html+=buildFlipUnit(digits,body._lastDigits,4);
-  html+='</div>';
-  html+='<div class="flip-date">'+esc(dateStr)+'</div>';
-  body.innerHTML=html; body._lastDigits=digits.slice();
-}
 
-function buildFlipUnit(digits,last,offset) {
-  var html='<div class="flip-unit">';
-  for(var i=0;i<2;i++){
-    var idx=offset+i, changed=digits[idx]!==last[idx];
-    html+='<div class="flip-digit'+(changed?' flip-anim':'')+'">';
-    html+='<div class="fd-top"><span>'+digits[idx]+'</span></div>';
-    html+='<div class="fd-bot"><span>'+digits[idx]+'</span></div>';
+  var modesHtml = '<div class="clock-mode-btns">'
+    + '<button class="clock-mode-btn'+(clockMode==='flip'?' active':'')+'" data-cm="flip" onclick="switchClockMode(\'flip\')">فلیپ</button>'
+    + '<button class="clock-mode-btn'+(clockMode==='digital'?' active':'')+'" data-cm="digital" onclick="switchClockMode(\'digital\')">دیجیتال</button>'
+    + '<button class="clock-mode-btn'+(clockMode==='analog'?' active':'')+'" data-cm="analog" onclick="switchClockMode(\'analog\')">آنالوگ</button>'
+    + '</div>';
+
+  var html = '';
+
+  if (clockMode === 'flip') {
+    var hp=pad2(h), mp=pad2(m), sp=pad2(s);
+    var digits=[hp[0],hp[1],mp[0],mp[1],sp[0],sp[1]];
+    if(!body._lastDigits) body._lastDigits=['','','','','',''];
+    html='<div class="flip-clock">';
+    html+=buildFlipUnit(digits,body._lastDigits,0);
+    html+='<span class="flip-sep">:</span>';
+    html+=buildFlipUnit(digits,body._lastDigits,2);
+    html+='<span class="flip-sep">:</span>';
+    html+=buildFlipUnit(digits,body._lastDigits,4);
     html+='</div>';
+    body._lastDigits=digits.slice();
+  } else if (clockMode === 'digital') {
+    html='<div class="digital-clock" style="direction:ltr">'+pad2(h)+':'+pad2(m)+':'+pad2(s)+'</div>';
+  } else if (clockMode === 'analog') {
+    var hDeg = (h % 12) * 30 + m * 0.5;
+    var mDeg = m * 6 + s * 0.1;
+    var sDeg = s * 6;
+    // tick marks
+    var ticks = '';
+    for (var i = 0; i < 12; i++) {
+      var isMaj = i % 3 === 0;
+      ticks += '<div class="tick" style="height:'+(isMaj?14:8)+'px;width:'+(isMaj?3:1.5)+'px;bottom:50%;margin-left:'+(isMaj?-1.5:-0.75)+'px;transform:rotate('+( i*30)+'deg) translateY(0);transform-origin:bottom center;position:absolute;left:50%;background:var('+(isMaj?'--text2':'--border2')+')"></div>';
+    }
+    html='<div class="analog-clock">'
+      +ticks
+      +'<div class="hand hand-h" style="transform:rotate('+hDeg+'deg)"></div>'
+      +'<div class="hand hand-m" style="transform:rotate('+mDeg+'deg)"></div>'
+      +'<div class="hand hand-s" style="transform:rotate('+sDeg+'deg)"></div>'
+      +'<div class="center-dot"></div>'
+      +'</div>';
   }
-  return html+'</div>';
+
+  html += '<div class="flip-date">'+esc(dateStr)+'</div>';
+  html += modesHtml;
+
+  body.innerHTML = html;
 }
 
-// --- Stopwatch ---
+function buildFlipUnit(digits, last, offset) {
+  var html = '<div class="flip-unit">';
+  for (var i = 0; i < 2; i++) {
+    var idx = offset + i;
+    var cur = digits[idx];
+    var prev = (last && last[idx] !== undefined) ? last[idx] : cur;
+    var changed = cur !== prev;
+    html += '<div class="flip-digit">';
+    if (changed) {
+      // نیمه پایین عدد جدید (ثابت، پشت صحنه)
+      html += '<div class="fd-bot"><span>' + cur + '</span></div>';
+      // نیمه بالا عدد جدید (ثابت، پشت کارت متحرک)
+      html += '<div class="fd-top"><span>' + cur + '</span></div>';
+      // کارت متحرک — نیمه بالا عدد قدیمی که می‌چرخد رو به پایین
+      html += '<div class="fd-flip"><span>' + prev + '</span></div>';
+      // پشت کارت متحرک — نیمه بالا عدد جدید که ظاهر می‌شود
+      html += '<div class="fd-flip-back"><span>' + cur + '</span></div>';
+      // نیمه پایین عدد جدید که با تأخیر ظاهر می‌شود
+      html += '<div class="fd-bot-next"><span>' + cur + '</span></div>';
+    } else {
+      html += '<div class="fd-top"><span>' + cur + '</span></div>';
+      html += '<div class="fd-bot"><span>' + cur + '</span></div>';
+    }
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+
+// --- Stopwatch (زمان‌سنج) ---
 function renderStopwatch() {
   var body=$('timerBody'); if(!body) return;
   var html='<div class="sw-display" id="swDisplay">'+swFormat(swState.time)+'</div>';
   html+='<div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center">';
   html+='<button class="btn '+(swState.running?'btn-danger':'btn-primary')+'" id="swMainBtn" onclick="swToggle()">'+(swState.running?t('swStop'):t('swStart'))+'</button>';
-  html+='<button class="btn btn-sec btn-sm" onclick="swLap()" '+(swState.running?'':'disabled')+'>'+t('swLap')+'</button>';
-  html+='<button class="btn btn-sec btn-sm" onclick="swReset()">'+t('swReset')+'</button>';
+  html+='<button class="btn btn-sec btn-sm" id="swLapBtn" onclick="swLap()" '+(swState.running?'':'disabled')+'>⏱ '+t('swLap')+'</button>';
+  html+='<button class="btn btn-sec btn-sm" onclick="swReset()">↺ '+t('swReset')+'</button>';
   html+='</div>';
   if(swState.laps.length){
-    html+='<div class="sw-laps">';
+    html+='<div class="sw-laps" id="swLapsList">';
     for(var i=swState.laps.length-1;i>=0;i--){
-      var lap=swState.laps[i], prev=i>0?swState.laps[i-1].end:0, diff=lap.end-prev;
-      html+='<div class="sw-lap"><span class="lap-num">'+(i+1)+'</span><span class="lap-time">'+swFormat(lap.end)+'</span><span class="lap-diff">+'+swFormat(diff)+'</span></div>';
+      var lap=swState.laps[i];
+      var prevEnd=i>0?swState.laps[i-1].end:0;
+      var diff=lap.end-prevEnd;
+      html+='<div class="sw-lap">'
+        +'<span class="lap-num">#'+(i+1)+'</span>'
+        +'<span class="lap-time">'+swFormat(lap.end)+'</span>'
+        +'<span class="lap-diff">+'+swFormat(diff)+'</span>'
+        +'</div>';
     }
     html+='</div>';
-  } else html+='<div style="font-size:12px;color:var(--text2);opacity:0.55">'+t('noLaps')+'</div>';
+  } else {
+    html+='<div style="font-size:12px;color:var(--text2);opacity:0.55">'+t('noLaps')+'</div>';
+  }
   body.innerHTML=html;
 }
 
-function swFormat(ms) { var cs=Math.floor(ms/10)%100,s=Math.floor(ms/1000)%60,m=Math.floor(ms/60000); return pad2(m)+':'+pad2(s)+'.'+pad2(cs); }
+function swFormat(ms) {
+  var cs=Math.floor(ms/10)%100, s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000);
+  return pad2(m)+':'+pad2(s)+'.'+pad2(cs);
+}
 
 function swToggle() {
   if(!swState.running){
     swState.running=true;
-    swState.timer=setInterval(function(){ swState.time+=10; var d=$('swDisplay'); if(d) d.textContent=swFormat(swState.time); },10);
-    var btn=$('swMainBtn'); if(btn){btn.textContent=t('swStop');btn.className='btn btn-danger';}
+    var startTime = Date.now() - swState.time;
+    swState.timer=setInterval(function(){
+      swState.time = Date.now() - startTime;
+      var d=$('swDisplay');
+      if(d) d.textContent=swFormat(swState.time);
+    },30);
+    var btn=$('swMainBtn');
+    if(btn){btn.textContent=t('swStop');btn.className='btn btn-danger';}
+    var lapBtn=$('swLapBtn');
+    if(lapBtn) lapBtn.disabled=false;
   } else {
-    swState.running=false; if(swState.timer){clearInterval(swState.timer);swState.timer=null;}
-    var btn=$('swMainBtn'); if(btn){btn.textContent=t('swStart');btn.className='btn btn-primary';}
+    swState.running=false;
+    if(swState.timer){clearInterval(swState.timer);swState.timer=null;}
+    var btn=$('swMainBtn');
+    if(btn){btn.textContent=t('swStart');btn.className='btn btn-primary';}
   }
 }
-function swLap() { if(!swState.running) return; swState.laps.push({end:swState.time}); renderStopwatch(); }
-function swReset() { swState.running=false; if(swState.timer){clearInterval(swState.timer);swState.timer=null;} swState.time=0;swState.laps=[]; renderStopwatch(); }
+
+function swLap() {
+  if(!swState.running) return;
+  swState.laps.push({end: swState.time});
+  // فقط لیست را آپدیت کن بدون render کامل
+  var list=$('swLapsList');
+  if(!list){renderStopwatch();return;}
+  var i=swState.laps.length-1;
+  var lap=swState.laps[i];
+  var prevEnd=i>0?swState.laps[i-1].end:0;
+  var diff=lap.end-prevEnd;
+  var div=document.createElement('div');
+  div.className='sw-lap';
+  div.innerHTML='<span class="lap-num">#'+(i+1)+'</span>'
+    +'<span class="lap-time">'+swFormat(lap.end)+'</span>'
+    +'<span class="lap-diff">+'+swFormat(diff)+'</span>';
+  list.insertBefore(div,list.firstChild);
+}
+
+function swReset() {
+  swState.running=false;
+  if(swState.timer){clearInterval(swState.timer);swState.timer=null;}
+  swState.time=0; swState.laps=[];
+  renderStopwatch();
+}
 
 // --- Countdown ---
 var PRESET_COLORS=[
@@ -2633,17 +3108,27 @@ function savePresets(p) { localStorage.setItem(PRESETS_KEY,JSON.stringify(p)); }
 
 function renderCountdown() {
   var body=$('timerBody'); if(!body) return;
-  var rem=cdState.remaining,total=cdState.total||1,pct=Math.max(0,rem/total*100);
-  var cs=Math.floor(rem/10)%100,s=Math.floor(rem/1000)%60,m=Math.floor(rem/60000);
-  var cls=cdState.ended?'done':rem<10000?'danger':rem<30000?'warning':'normal';
-  var html='<div class="cd-display '+cls+'" id="cdDisplay">'+pad2(m)+':'+pad2(s)+'.'+pad2(cs)+'</div>';
-  if(cdState.presetName) html+='<div class="cd-preset-label" style="background:'+cdState.presetColor+'22;color:'+cdState.presetColor+'">🏷️ '+esc(cdState.presetName)+'</div>';
-  html+='<div class="cd-progress-track"><div class="cd-progress-fill" id="cdBar" style="width:'+pct+'%;background:'+cdState.presetColor+'"></div></div>';
+  var rem=cdState.remaining, total=cdState.total||1;
+  var pct=Math.max(0,rem/total*100);
+  var cs=Math.floor(rem/10)%100, s=Math.floor(rem/1000)%60, m=Math.floor(rem/60000);
+  var presetColor=cdState.presetColor||'var(--accent)';
+  var dispColor, dispShadow;
+  if(cdState.ended||!cdState.running){
+    dispColor=presetColor; dispShadow='0 0 28px '+presetColor+'88';
+  } else if(pct>30){
+    dispColor='var(--accent)'; dispShadow='0 0 28px var(--accent-glow)';
+  } else {
+    dispColor=presetColor;
+    dispShadow='0 0 '+(pct<10?'40':'28')+'px '+presetColor+(pct<10?'cc':'88');
+  }
+  var html='<div class="cd-display" id="cdDisplay" style="color:'+dispColor+';text-shadow:'+dispShadow+'">'+pad2(m)+':'+pad2(s)+'.'+pad2(cs)+'</div>';
+  if(cdState.presetName) html+='<div class="cd-preset-label" style="background:'+presetColor+'22;color:'+presetColor+'">🏷️ '+esc(cdState.presetName)+'</div>';
+  html+='<div class="cd-progress-track"><div class="cd-progress-fill" id="cdBar" style="width:'+pct+'%;background:'+presetColor+'"></div></div>';
   html+='<div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center">';
-  if(cdState.ended) html+='<button class="btn btn-primary" onclick="cdReset()">'+t('cdReset')+'</button>';
-  else if(cdState.running) html+='<button class="btn btn-danger" onclick="cdToggle()">'+t('cdPause')+'</button>';
-  else html+='<button class="btn btn-primary" onclick="cdToggle()">'+(cdState.paused?t('cdResume'):t('cdStart'))+'</button>';
-  html+='<button class="btn btn-sec btn-sm" onclick="cdReset()">'+t('cdReset')+'</button>';
+  if(cdState.ended) html+='<button class="btn btn-primary" onclick="cdReset()" style="background:'+presetColor+'">↺ '+t('cdReset')+'</button>';
+  else if(cdState.running) html+='<button class="btn btn-danger" onclick="cdToggle()">⏸ '+t('cdPause')+'</button>';
+  else html+='<button class="btn btn-primary" onclick="cdToggle()">'+(cdState.paused?'▶ '+t('cdResume'):'▶ '+t('cdStart'))+'</button>';
+  html+='<button class="btn btn-sec btn-sm" onclick="cdReset()">↺ '+t('cdReset')+'</button>';
   html+='<button class="btn btn-ghost btn-sm" onclick="showPresets()">🏷️ '+t('presets')+'</button>';
   html+='</div>';
   body.innerHTML=html;
@@ -2674,21 +3159,31 @@ function cdTick() {
   if(cdState.remaining<=0){
     cdState.remaining=0;cdState.running=false;cdState.ended=true;
     if(cdState.timer){clearInterval(cdState.timer);cdState.timer=null;}
-    renderCountdown(); toast(t('cdDone'),'success'); doConfetti(); return;
+    renderCountdown(); toast(t('cdDone'),'success'); doConfetti();
+    // بازنشانی خودکار بعد از ۵ ثانیه اگر فرد دستی بازنشانی نکرد
+    cdState.autoResetTimer = setTimeout(function(){
+      if(cdState.ended) cdReset();
+    }, 5000);
+    return;
   }
   var d=$('cdDisplay');
   if(d){
-    var rem=cdState.remaining,total=cdState.total||1;
-    var cs=Math.floor(rem/10)%100,s=Math.floor(rem/1000)%60,m=Math.floor(rem/60000);
+    var rem=cdState.remaining, total=cdState.total||1, pct=Math.max(0,rem/total*100);
+    var cs=Math.floor(rem/10)%100, s=Math.floor(rem/1000)%60, m=Math.floor(rem/60000);
     d.textContent=pad2(m)+':'+pad2(s)+'.'+pad2(cs);
-    d.className='cd-display '+(rem<10000?'danger':rem<30000?'warning':'normal');
-    var bar=$('cdBar'); if(bar) bar.style.width=Math.max(0,rem/total*100)+'%';
+    var pc=cdState.presetColor||'var(--accent)';
+    if(pct>30){ d.style.color='var(--accent)'; d.style.textShadow='0 0 28px var(--accent-glow)'; }
+    else { d.style.color=pc; d.style.textShadow='0 0 '+(pct<10?'40':'28')+'px '+pc+(pct<10?'cc':'88'); }
+    var bar=$('cdBar'); if(bar) bar.style.width=pct+'%';
   }
 }
 
 function cdReset() {
   if(cdState.timer){clearInterval(cdState.timer);cdState.timer=null;}
-  cdState.running=false;cdState.paused=false;cdState.remaining=0;cdState.total=0;cdState.ended=false;
+  if(cdState.autoResetTimer){clearTimeout(cdState.autoResetTimer);cdState.autoResetTimer=null;}
+  // برچسب را نگه‌دار — فقط زمان ریست می‌شود
+  cdState.running=false; cdState.paused=false; cdState.ended=false;
+  cdState.remaining=cdState.total||0;
   renderCountdown();
 }
 
@@ -2745,8 +3240,10 @@ function selectPreset(name) {
   var presets=loadPresets(), found=null;
   for(var i=0;i<presets.length;i++) if(presets[i].name===name){found=presets[i];break;}
   if(!found) return;
-  cdReset(); cdState.presetName=found.name; cdState.presetColor=found.color||'var(--accent)';
+  cdState.presetName=found.name; cdState.presetColor=found.color||'var(--accent)';
   cdState.total=found.time*60000; cdState.remaining=cdState.total;
+  cdState.running=false; cdState.paused=false; cdState.ended=false;
+  if(cdState.autoResetTimer){clearTimeout(cdState.autoResetTimer);cdState.autoResetTimer=null;}
   closeModal(); renderCountdown();
 }
 function closeModal() { $('modalRoot').innerHTML=''; }
@@ -2825,6 +3322,7 @@ if(window.electronAPI){
     updateAllText(); populateCatDropdowns(); updateLangFilter();
     renderCards(); updateStats(); updateBadges();
     $('versionDisplay').textContent=APP_VERSION;
+    var av=$('aboutVersion'); if(av) av.textContent=APP_VERSION;
     $('studyArea').innerHTML='<div class="empty-state"><span class="es-icon">🎯</span><p>'+t('noCardsStudy')+'</p></div>';
     renderTimerMode();
 
