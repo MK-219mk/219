@@ -1007,13 +1007,6 @@ body.timer-fs #fsExitBtn { display:flex; }
       <div class="section-title"><span class="icon">🎯</span><span id="studyPageTitle">جلسه مطالعه</span></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" id="studySettings">
         <select id="studyCatFilter" onchange="startStudy(this.value)" title="فیلتر دسته" style="max-width:150px"></select>
-        <div style="display:flex;align-items:center;gap:6px;flex:none">
-          <label class="toggle" title="Practice mode — no stats recorded">
-            <input type="checkbox" id="practiceMode" onchange="updatePracticeMode(this)">
-            <span class="knob"></span>
-          </label>
-          <span id="t-practiceLabel" style="font-size:12px;color:var(--text2);white-space:nowrap">تمرین</span>
-        </div>
       </div>
     </div>
     <div id="studyArea"></div>
@@ -1578,7 +1571,7 @@ var statsLearningCat='all';
 var browseVisibleCards=[]; // لیست فعلی نمایش‌داده‌شده در «همه کارت‌ها» - برای ناوبری قبلی/بعدی در پیش‌نمایش شناور
 var previewIndex=-1, previewFlipped=false;
 var editingCardId=null;
-var studyQueue=[], studyIndex=0, studyActive=false, practiceMode=false, currentStudyCat='all', earlyReviewMode=false;
+var studyQueue=[], studyIndex=0, studyActive=false, currentStudyCat='all', earlyReviewMode=false;
 var quizState=null;
 var timerMode='clock', clockMode='flip', clockInterval=null;
 var swState={running:false,time:0,laps:[],timer:null};
@@ -1942,7 +1935,6 @@ function updateAllText(){
   // Learning progress
   el=$('learningTitle');if(el)el.textContent=fa?'🧠 سطح یادگیری':'🧠 Learning Level';
   // Practice mode
-  el=$('t-practiceLabel');if(el)el.textContent=fa?'تمرین':'Practice';
   // Timer buttons
   el=$('t-clockBtn');if(el)el.textContent=fa?'🕐 ساعت':'🕐 Clock';
   el=$('t-stopwatchBtn');if(el)el.textContent=fa?'⏱ زمان‌سنج':'⏱ Stopwatch';
@@ -2309,14 +2301,6 @@ function renderCards(){
   var dueCounts=getCatDueCounts();
   var dueCount=dueCounts['all']||0;
   var html='';
-  html+='<div class="hero-banner">';
-  html+='<div><h2>'+(fa?'یادگیری هوشمند با FSRS':'Smart learning with FSRS')+'</h2>';
-  html+='<p>'+(fa?'کارت‌هایت را مرور کن — مغزت قوی‌تر می‌شود':'Review your cards — strengthen your memory')+'</p></div>';
-  html+='<div class="hero-pills">';
-  html+='<span class="hero-pill">📚 <strong>'+cards.length+'</strong> '+(fa?'کارت':'cards')+'</span>';
-  html+='<span class="hero-pill">⏰ <strong>'+dueCount+'</strong> '+(fa?'نیاز به مرور':'due')+'</span>';
-  html+='<span class="hero-pill">v'+APP_VERSION+'</span>';
-  html+='</div></div>';
   html+='<div class="cat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">';
   for(var i=0;i<cats.length;i++){
     var c=cats[i],count=counts[c.id]||0;
@@ -2378,7 +2362,7 @@ function renderCardList(container,q,lf){
       emptyBtn='<button class="btn btn-primary" onclick="switchTab(\'add\')" style="margin-top:18px">✨ '+(fa?'اولین کارت رو بساز':'Create Your First Card')+'</button>'+
                '<div style="margin-top:14px;font-size:12px;color:var(--text3);line-height:2">'+
                (fa?'💡 با افزودن کلمات جدید شروع کن — جملات AI خودکار ساخته می‌شوند':'💡 Start by adding words — AI sentences generated automatically')+'<br>'+
-               (fa?'📵 همه چیز آفلاین کار می‌کند، نگران اینترنت نباش':'📵 Everything works offline')+'</div>';
+               (fa?'🔌 همه چیز آفلاین کار می‌کند، نگران اینترنت نباش':'🔌 Everything works offline')+'</div>';
     }
     container.innerHTML='<div class="empty-state"><span class="es-icon">'+emptyIcon+'</span><p>'+emptyMsg+'</p>'+emptyBtn+'</div>';
     return;
@@ -2555,18 +2539,6 @@ function logStudyDay(){
 }
 
 // ===== STUDY =====
-// نکته باگ: قبلاً وضعیت با OR بین دو چک‌باکس محاسبه می‌شد که باعث می‌شد
-// خاموش کردن یکی از دو سوییچ (وقتی هر دو روشن بودند) اثر نکند، چون سوییچ
-// دیگر هنوز true بود و OR دوباره true برمی‌گرداند. حالا فقط سوییچی که کاربر
-// همین الان لمس کرده منبع حقیقت است و سوییچ دیگر با آن همگام می‌شود.
-function updatePracticeMode(source){
-  practiceMode = source ? !!source.checked : !practiceMode;
-  var pm1=$('practiceMode'),pm2=$('practiceMode2');
-  if(pm1) pm1.checked=practiceMode;
-  if(pm2) pm2.checked=practiceMode;
-  if(studyActive) showStudyCard();
-}
-
 function populateStudyCatSelect(){
   var sel=$('studyCatFilter');if(!sel)return;
   var fa=currentLang==='fa';
@@ -2688,11 +2660,14 @@ function startStudy(catId){
 // توجه: امتیاز دادن به کارت در این حالت هم مانند مرور عادی FSRS را به‌روزرسانی می‌کند
 // (interval/stability/difficulty)، پس این یک مرور واقعی است، فقط زودتر از موعد پیشنهادی انجام می‌شود.
 function buildEarlyReviewQueue(catId){
-  var list=[];
+  var list=[],todayStr=getTodayStr();
   for(var i=0;i<cards.length;i++){
     var c=cards[i];
     if(catId!=='all'&&c.cat!==catId) continue;
     if((c.repetitions||0)===0) continue;
+    // کارتی که همین امروز (چه به‌صورت عادی چه زودتر از موعد) مرور شده را دوباره نیاور،
+    // وگرنه کارت‌هایی با فاصله‌ی کوتاه (مثلاً امتیاز «دوباره») بلافاصله برمی‌گردند و حلقه‌ی بی‌پایان می‌سازند
+    if(c.lastReview){var lr=new Date(c.lastReview);var lrStr=lr.getFullYear()+'-'+pad2(lr.getMonth()+1)+'-'+pad2(lr.getDate());if(lrStr===todayStr)continue;}
     list.push(c);
   }
   list.sort(function(a,b){return a.nextReview-b.nextReview;});
@@ -2732,7 +2707,7 @@ function showStudyCard(){
       +'<div class="stat-card"><div class="stat-val" style="font-size:28px">'+cards.length+'</div><div class="stat-label">'+(fa?'کل کارت‌ها':'Total Cards')+'</div></div>'
       +'</div>'
       +actionBtn+'</div>';
-    if(!practiceMode)doConfetti();
+    doConfetti();
     saveData();
     return;
   }
@@ -2748,7 +2723,6 @@ function showStudyCard(){
   html+='<span>'+(studyIndex+1)+'/'+total+'</span>';
   html+='<div class="track"><div class="fill" style="width:'+pct+'%"></div></div>';
   html+='</div>';
-  if(practiceMode) html+='<span class="practice-badge" style="margin-right:8px">'+(fa?'حالت تمرین':'Practice')+'</span>';
   html+='</div>';
 
   // Flashcard
@@ -2763,10 +2737,12 @@ function showStudyCard(){
   // User sentence
   if(card.userSentence) html+='<div class="fc-example" style="border-right-color:var(--amber);font-size:12px">✍️ '+esc(card.userSentence)+'</div>';
   // AI example sentence on front
-  if(settings.showExamples){
+  var hasAnyExample=!!(card.userSentence||card.example||card.aiExample);
+  if(settings.showExamples&&hasAnyExample){
     var ex=card.example||card.aiExample||'';
-    if(ex) html+='<div class="fc-example">🤖 '+esc(ex)+'</div>';
-    else if(!card.userSentence) html+='<div class="ai-loading" id="aiLoadingFront"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span style="font-size:11px;color:var(--text2)">'+(fa?'در حال ساخت جمله...':'Building example...')+'</span></div>';
+    if(ex&&!card.userSentence) html+='<div class="fc-example">🤖 '+esc(ex)+'</div>';
+  }else if(settings.showExamples&&settings.enableAI&&!hasAnyExample){
+    html+='<button class="btn btn-sec btn-sm" id="genExampleBtn" onclick="event.stopPropagation();generateExampleManual(\''+card.id+'\')" style="margin-top:8px">🤖 '+(fa?'ساخت جمله مثال':'Generate example sentence')+'</button>';
   }
   html+='<button class="fc-audio-btn" id="audioBtn" type="button">🔊</button>';
   html+='<div class="fc-hint">👆 '+(fa?'بزن تا جواب ببینی':'Tap to reveal')+'</div>';
@@ -2826,15 +2802,14 @@ function showStudyCard(){
   }
 
   if(settings.enableAudio!==false) setTimeout(function(){speakWord(card.word,card.lang);},500);
-  if(settings.showExamples&&!card.example) generateExample(card,'front');
 }
 
 function prevStudyCard(){
   if(studyIndex<=0)return;
   studyIndex--;
-  // اگر کارت قبلی امتیاز داشت و حالت تمرین نیست، SRS را برگردان
+  // اگر کارت قبلی امتیاز داشت، SRS را برگردان
   var card=studyQueue[studyIndex];
-  if(card&&card._prevState&&!practiceMode){
+  if(card&&card._prevState){
     // بازگرداندن وضعیت FSRS
     card.ease=card._prevState.ease;
     card.interval=card._prevState.interval;
@@ -2859,20 +2834,22 @@ function skipStudyCard(){
 
 function rateCard(grade){
   var card=studyQueue[studyIndex];if(!card)return;
-  if(!practiceMode){
-    // Track daily usage
+  // در حالت «مطالعه زودتر از موعد» این مرور نباید سهمیه‌ی روزانه‌ی کارت‌های due واقعی را مصرف کند،
+  // وگرنه بعد از چند دور مرور زودتر از موعد، سهمیه‌ی روزانه تمام‌شده به‌نظر می‌رسد و کارت‌های
+  // واقعاً due آن روز هم مسدود می‌شوند (باگ «همه کارت‌ها مرور شده‌اند» اشتباه).
+  if(!earlyReviewMode){
     var wasNew=(card.repetitions||0)===0;
     var daily=getDailyStats();
     if(wasNew) daily.newCards++; else daily.reviews++;
     saveDailyStats(daily);
-    // ذخیره قبل از آپدیت برای امکان برگشت
-    var prevState=deepClone(card);
-    card._prevState=prevState;
-    fsrsUpdate(card,grade);
-    logStudyDay();
-    saveData();
-    updateBadges();
   }
+  // ذخیره قبل از آپدیت برای امکان برگشت
+  var prevState=deepClone(card);
+  card._prevState=prevState;
+  fsrsUpdate(card,grade);
+  logStudyDay();
+  saveData();
+  updateBadges();
   studyIndex++;
   if(settings.autoAdvance!==false){
     showStudyCard();
@@ -3172,40 +3149,34 @@ function getExampleTrans(cardId){
   return c?c.trans||c.translation||'':'';
 }
 
-function generateExample(card,target){
-  if(!settings.enableAI||!card||!card.id)return;
-  if(card.example){
-    var existing=document.getElementById('aiLoadingFront');
-    if(existing)existing.style.display='none';
-    return;
-  }
+// نسخه‌ی دستی: کاربر با زدن دکمه جمله می‌سازد (نه به‌صورت خودکار).
+// برخلاف قبل، بعد از دریافت پاسخ کل کارت را دوباره رندر می‌کنیم (نه فقط یک تکه از DOM)
+// تا هم جمله در روی کارت و هم ترجمه‌اش در پشت کارت درست نمایش داده شوند.
+function generateExampleManual(cardId){
+  var card=studyQueue[studyIndex];
+  if(!card||String(card.id)!==String(cardId))return;
+  if(!settings.enableAI){toast(currentLang==='fa'?'هوش مصنوعی غیرفعال است':'AI is disabled','info');return;}
+  var btn=$('genExampleBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div>';}
   var cache=getSentenceCache();
   if(cache[card.id]){
-    card.aiExample=cache[card.id].sentence||cache[card.id].translation||'';
+    card.aiExample=cache[card.id].sentence||'';
     card.aiExampleTrans=cache[card.id].trans||cache[card.id].translation||'';
-    updateExampleInUI(card,cache[card.id]);
+    saveData();
+    showStudyCard();
     return;
   }
   aiGenerate(card,settings.aiLevel||'intermediate',function(result){
-    // ذخیره مستقیم روی کارت مثل userSentence/userTranslation
     card.aiExample=result.sentence||'';
     card.aiExampleTrans=result.trans||result.translation||'';
     saveData();
     var c=getSentenceCache();c[card.id]=result;setSentenceCache(c);
-    updateExampleInUI(card,result);
+    // فقط اگر هنوز روی همین کارت هستیم رندر کن (کاربر ممکن است زودتر رفته باشد)
+    if(studyQueue[studyIndex]&&String(studyQueue[studyIndex].id)===String(card.id)) showStudyCard();
   },function(msg){
-    var loader=document.getElementById('aiLoadingFront');
-    if(loader)loader.style.display='none';
+    if(btn){btn.disabled=false;btn.innerHTML='🤖 '+(currentLang==='fa'?'ساخت جمله مثال':'Generate example sentence');}
+    toast((currentLang==='fa'?'❌ ساخت جمله ناموفق بود: ':'❌ Failed to generate: ')+(msg||''),'error');
   });
-}
-
-function updateExampleInUI(card,result){
-  var loader=$('aiLoadingFront');
-  if(loader){
-    var div=document.createElement('div');
-    div.className='fc-example';div.textContent=result.sentence||result.translation||'';
-    loader.parentNode.replaceChild(div,loader);
-  }
 }
 
 function generateExampleFromAdd(){
@@ -4192,7 +4163,7 @@ function isNewerVersion(remote,local){
 }
 function checkForUpdates(manual){
   if(window.electronAPI){window.electronAPI.checkForUpdates();return;}
-  if(!navigator.onLine){if(manual)toast('📵 اینترنت قطع است','error');return;}
+  if(!navigator.onLine){if(manual)toast('🔌 اینترنت قطع است','error');return;}
   fetch('https://api.github.com/repos/'+REPO+'/releases/latest',{cache:'no-cache'})
     .then(function(r){if(!r.ok)throw new Error('no release');return r.json();})
     .then(function(data){
@@ -4677,7 +4648,7 @@ function renderHelp(){
       <p style="text-align:center;color:var(--text2);font-size:12px;margin-bottom:14px">نسخه <strong>`+APP_VERSION+`</strong></p>
       <p><strong>اپلیکیشن فلش‌کارت هوشمند</strong> با الگوریتم <strong>FSRS</strong> — پیشرفته‌ترین الگوریتم یادگیری فاصله‌دار. داده‌های شما فقط در مرورگر خودتان ذخیره می‌شود.</p>
       <p>🌐 <strong>۳ سرویس AI</strong> — DeepSeek، Gemini، الگوی آفلاین</p>
-      <p>📵 <strong>آفلاین:</strong> همه امکانات (مطالعه، آزمون، آمار، کارت‌ها، تنظیمات) بدون اینترنت کار می‌کنند. جمله‌سازی AI با الگوی آفلاین بدون اینترنت کار می‌کند.</p>
+      <p>🔌 <strong>آفلاین:</strong> همه امکانات (مطالعه، آزمون، آمار، کارت‌ها، تنظیمات) بدون اینترنت کار می‌کنند. جمله‌سازی AI با الگوی آفلاین بدون اینترنت کار می‌کند.</p>
       <p>🎯 <strong>آزمون</strong> با ۷ حالت + سیستم نمره‌دهی</p>
       <p>🕐 <strong>ساعت، زمان‌سنج، شمارش معکوس</strong> با انیمیشن فلش و ساعت آنالوگ لوکس</p>
       <p>🔒 <strong>داده‌ها فقط در مرورگر شما</strong> — بدون سرور</p>
@@ -4759,7 +4730,7 @@ function renderHelp(){
       <p><kbd>Esc</kbd> — خروج از تمام صفحه</p>
     `}
   ]:[
-    {title:'🧠 About 219',content:`<p>Smart flashcard app using <strong>FSRS</strong> algorithm. Your data is stored only in your browser — never sent anywhere.</p><p>📵 <strong>Offline:</strong> Study, quizzes, stats, cards, and settings all work offline. AI sentence generation with Offline Template also works without internet.</p>`},
+    {title:'🧠 About 219',content:`<p>Smart flashcard app using <strong>FSRS</strong> algorithm. Your data is stored only in your browser — never sent anywhere.</p><p>🔌 <strong>Offline:</strong> Study, quizzes, stats, cards, and settings all work offline. AI sentence generation with Offline Template also works without internet.</p>`},
     {title:'📝 Quiz Guide',content:`
       <p>7 quiz modes available. Spelling matters in typing mode — <strong>London</strong> ≠ <strong>london</strong>!</p>
       <p>Score: +10 correct, +5 speed bonus (under 5s), -3 wrong, 5+ streak = ×1.5 multiplier</p>
@@ -4975,7 +4946,7 @@ window.addEventListener('unhandledrejection',function(e){
     // Online status
     updateOnlineStatus();
     window.addEventListener('online',function(){updateOnlineStatus();toast('✅ اینترنت وصل شد','success');});
-    window.addEventListener('offline',function(){updateOnlineStatus();toast('📵 اینترنت قطع شد','error');});
+    window.addEventListener('offline',function(){updateOnlineStatus();toast('🔌 اینترنت قطع شد','error');});
 
     // Auto update check (silent, 10s after load)
     setTimeout(function(){checkForUpdates(false);},10000);
