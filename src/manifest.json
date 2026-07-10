@@ -1,7 +1,7 @@
 {
   "name": "219 - فلش‌کارت هوشمند",
   "short_name": "219",
-  "description": "یادگیری کلمات با تکرار فاصله‌دار هوشمند",
+  "description": "یادگیری کلمات با تکرار فاصله‌دار هوشمند — نسخه 3.0.0",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#080810",
@@ -10,7 +10,9 @@
   "lang": "fa",
   "dir": "rtl",
   "icons": [
-    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
   ],
   "categories": ["education", "productivity"],
   "screenshots": []

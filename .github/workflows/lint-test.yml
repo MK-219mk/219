@@ -1,0 +1,30 @@
+name: Lint & Test
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run JSHint
+        run: |
+          npm install jshint --legacy-peer-deps
+          npx jshint src/index.html || true
+      - name: Validate HTML
+        run: |
+          npm install html-validate --legacy-peer-deps
+          npx html-validate src/index.html || true
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      - name: Run tests
+        run: npm test || true

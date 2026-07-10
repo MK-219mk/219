@@ -26,6 +26,15 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
+function isSafeExternalUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 app.whenReady().then(() => {
   createWindow();
   autoUpdater.checkForUpdatesAndNotify();
@@ -65,9 +74,13 @@ ipcMain.handle('select-file', async (event, filters) => {
 });
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
-    const data = fs.readFileSync(filePath, 'utf-8');
+    const data = await fs.promises.readFile(filePath, 'utf-8');
     return { success: true, data, fileName: path.basename(filePath) };
   } catch (e) { return { success: false, error: e.message }; }
 });
 ipcMain.handle('get-app-version', () => app.getVersion());
-ipcMain.handle('open-external', async (event, url) => { await shell.openExternal(url); });
+ipcMain.handle('open-external', async (event, url) => {
+  if (!isSafeExternalUrl(url)) return { success: false, error: 'Invalid URL' };
+  await shell.openExternal(url);
+  return { success: true };
+});

@@ -1,9 +1,13 @@
-const CACHE_NAME = '219-v2.0.0';
+// نکته حیاتی معماری: این Cache Storage فقط پوسته‌ی برنامه (index.html/manifest/آیکون) را
+// نگه می‌دارد و هیچ‌وقت به localStorage/IndexedDB کاربر (کارت‌ها، تنظیمات و...) دست نمی‌زند.
+// بنابراین تغییر CACHE_NAME یا حذف کش‌های قدیمی در activate هرگز باعث از دست رفتن
+// داده کاربر نمی‌شود — کاملاً امن است که این نسخه هر بار که کد تغییر می‌کند بالا برود.
+const CACHE_NAME = '219-v3.0.0';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icons/icon.svg'
+  './icons/icon.png'
 ];
 
 self.addEventListener('install', e => {
