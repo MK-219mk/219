@@ -3936,8 +3936,17 @@ function deleteAllData(){
   if(!confirm(currentLang==='fa'?'همه داده‌ها حذف شوند؟ قابل بازگشت نیست!':'Delete ALL data? Cannot be undone!'))return;
   [STORE_KEY,SETTINGS_KEY,THEME_KEY,PRESETS_KEY,QUIZ_KEY,STUDY_LOG_KEY,SENTENCES_KEY,FEATURES_KEY,NAV_ORDER_KEY,TIMER_STATE_KEY,'219_acc_state','219_quiz_prefs','219_daily'].forEach(function(k){localStorage.removeItem(k);});
   cards=[];cats=[];settings={};
+  // کش Service Worker (فایل‌های نسخه‌های قبلی سایت) را هم پاک کن تا واقعاً یک شروع تازه باشد —
+  // این کش هیچ‌وقت خودش با پاک شدن localStorage پاک نمی‌شد و می‌توانست باعث رفتار قدیمی/ناسازگار بماند
+  var finishReload=function(){location.reload(true);};
+  if('caches' in window){
+    caches.keys().then(function(keys){
+      return Promise.all(keys.map(function(k){return caches.delete(k);}));
+    }).then(finishReload).catch(finishReload);
+  }else{
+    finishReload();
+  }
   toast(currentLang==='fa'?'همه داده‌ها حذف شدند':'All data deleted','error');
-  location.reload();
 }
 
 // ===== BACKUP / RESTORE =====
