@@ -2021,7 +2021,7 @@ function getCatCounts(){
 }
 function getCatDueCounts(){
   var now=Date.now(),m={};for(var i=0;i<cats.length;i++) m[cats[i].id]=0;m['all']=0;
-  for(var i=0;i<cards.length;i++){if(cards[i].nextReview<=now){var c=cards[i].cat;if(m[c]!==undefined)m[c]++;m['all']++;}}
+  for(var i=0;i<cards.length;i++){if(isSameOrEarlierDay(cards[i].nextReview,now)){var c=cards[i].cat;if(m[c]!==undefined)m[c]++;m['all']++;}}
   return m;
 }
 
@@ -2394,7 +2394,7 @@ function renderCardList(container,q,lf){
   }
 
   for(var i=0;i<toRender.length;i++){
-    var c=toRender[i],cat=catById(c.cat),due=c.nextReview<=now;
+    var c=toRender[i],cat=catById(c.cat),due=isSameOrEarlierDay(c.nextReview,now);
     var intervalStr=c.interval===0?'<span style="color:var(--accent)">'+(fa?'جدید':'New')+'</span>':c.interval>=365?((c.interval/365).toFixed(1)+(fa?'سال':'yr')):c.interval>=30?(Math.round(c.interval/30)+(fa?'ماه':'mo')):(c.interval+(fa?'روز':'d'));
     var progWidth=Math.min(100,(c.interval/365)*100);
     html+='<div class="card-item" style="border-right:4px solid '+cat.color+'">';
@@ -2546,12 +2546,13 @@ function populateStudyCatSelect(){
   var dueCounts=getCatDueCounts();
   var totalDue=dueCounts['all']||0;
   var html='<option value="all">'+(fa?'📚 همه دسته‌ها ('+totalDue+')':'📚 All Categories ('+totalDue+')')+'</option>';
+  html+='<option value="__today__">'+(fa?'🔁 مرور کارت‌های امروز':'🔁 Review today\'s cards')+'</option>';
   for(var i=0;i<cats.length;i++){
     var c=cats[i],count=dueCounts[c.id]||0;
     html+='<option value="'+esc(c.id)+'">'+esc(c.icon)+' '+esc(c.name)+' ('+count+')</option>';
   }
   sel.innerHTML=html;
-  sel.value=(cats.some(function(c){return c.id===currentStudyCat;})||currentStudyCat==='all')?currentStudyCat:'all';
+  sel.value=(currentStudyCat==='__today__'||cats.some(function(c){return c.id===currentStudyCat;})||currentStudyCat==='all')?currentStudyCat:'all';
 }
 
 // ===== CARD PREVIEW MODAL (فقط نمایش - بدون امتیازدهی، بدون تاثیر بر آمار/FSRS) =====
@@ -2591,12 +2592,29 @@ function renderCardPreview(){
   if(!card){closeCardPreview();return;}
   var fa=currentLang==='fa';
   var cardArea=$('previewCardArea');
-  var frontText=previewFlipped?card.trans:card.word;
   var backHint=previewFlipped?(fa?'👆 بزن تا کلمه را ببینی':'👆 Tap to see the word'):(fa?'👆 بزن تا معنی را ببینی':'👆 Tap to see meaning');
-  cardArea.innerHTML='<div class="preview-flashcard" onclick="previewToggleFlip()">'
-    +'<div class="'+(previewFlipped?'preview-trans':'preview-word')+'">'+esc(frontText)+'</div>'
-    +'<div class="preview-hint">'+backHint+'</div>'
-    +'</div>';
+  var html='<div class="preview-flashcard" onclick="if(event.target.closest(\'.fc-audio-btn\'))return;previewToggleFlip()">';
+  if(!previewFlipped){
+    html+='<div class="preview-word">'+esc(card.word)+'</div>';
+    html+='<button class="fc-audio-btn" id="previewAudioBtn" type="button" title="'+(fa?'تلفظ':'Pronounce')+'">🔊</button>';
+    var ex=card.userSentence||card.example||card.aiExample||'';
+    if(ex) html+='<div class="fc-example">'+(card.userSentence?'✍️ ':'🤖 ')+esc(ex)+'</div>';
+  }else{
+    html+='<div class="preview-trans">'+esc(card.trans)+'</div>';
+    var exTrans=card.userTranslation||card.aiExampleTrans||'';
+    if(exTrans) html+='<div class="fc-example-trans"'+(card.userTranslation?' style="color:var(--amber)"':'')+'>'+(card.userTranslation?'✍️ ':'🤖 ')+esc(exTrans)+'</div>';
+    if(card.note) html+='<div class="fc-note">💡 '+esc(card.note)+'</div>';
+  }
+  html+='<div class="preview-hint">'+backHint+'</div>';
+  html+='</div>';
+  cardArea.innerHTML=html;
+  var previewAudioBtn=$('previewAudioBtn');
+  if(previewAudioBtn){
+    previewAudioBtn.addEventListener('click',function(e){
+      e.stopPropagation();
+      speakWord(card.word,card.lang);
+    });
+  }
 
   // ناوبری قبلی/بعدی — جهت فلش‌ها بر اساس زبان سایت (در فارسی معکوس انگلیسی)، ولی عملکرد منطقی همیشه ثابت است
   var prevArrow=fa?'→':'←', nextArrow=fa?'←':'→';
@@ -2612,6 +2630,24 @@ function getDailyStats(){
   try{var d=JSON.parse(localStorage.getItem('219_daily')||'{}');if(d.date!==getTodayStr())return{date:getTodayStr(),newCards:0,reviews:0};return d;}catch(e){return{date:getTodayStr(),newCards:0,reviews:0};}
 }
 function saveDailyStats(stats){try{localStorage.setItem('219_daily',JSON.stringify(stats));}catch(e){}}
+// تشخیص اینکه آیا یک timestamp در همان روز تقویمی timestamp دیگر است یا زودتر از آن —
+// طبق توصیه‌ی مستندات رسمی FSRS: «کارتی که ساعت ۱۱ شب مطالعه شده نباید تا ابد دقیقاً
+// ساعت ۱۱ شب due بماند»؛ مرورهای روزانه (day-scale) باید بر اساس روز تقویمی سنجیده شوند.
+function isSameOrEarlierDay(ts,refTs){
+  var d1=new Date(ts),d2=new Date(refTs);
+  d1.setHours(0,0,0,0);d2.setHours(0,0,0,0);
+  return d1.getTime()<=d2.getTime();
+}
+
+// بازسازی کامل بر اساس مستندات رسمی FSRS/Anki: هر کارت یکی از سه حالت را دارد:
+//  ۱) جدید (New): هرگز مطالعه نشده (lastReview=0)
+//  ۲) یادگیری‌مجدد کوتاه‌مدت (Relearning): بعد از امتیاز «دوباره»، interval=0 و nextReview چند دقیقه بعد است
+//  ۳) مرور روزانه (Review): مرحله‌ی عادی روزمره با interval>=۱ روز
+// نکته‌ی حیاتی که قبلاً غلط بود: کارت‌های حالت ۲ با reps=0 اشتباهاً «جدید» در نظر گرفته می‌شدند
+// و بدون توجه به nextReview بلافاصله دوباره نمایش داده می‌شدند و هم سهمیه‌ی کارت‌جدید روزانه را
+// اشغال می‌کردند — این باعث حلقه‌های تکرار و قفل‌شدن سهمیه‌ی روزانه می‌شد.
+// طبق مستندات fsrs4anki/Anki، کارت‌های در حال یادگیری‌مجدد باید مستقل از سقف روزانه و فوری
+// نمایش داده شوند (دقیقاً مثل رفتار واقعی Anki).
 function buildStudyQueue(catId){
   var now=Date.now();
   var newLimit=Math.max(1,parseInt(settings.newPerDay)||20);
@@ -2619,24 +2655,33 @@ function buildStudyQueue(catId){
   var daily=getDailyStats();
   var newRemaining=Math.max(0,newLimit-daily.newCards);
   var reviewRemaining=Math.max(0,reviewLimit-daily.reviews);
-  var dueReviews=[], newCards=[];
+  var relearning=[],dueReviews=[],newCards=[];
   for(var i=0;i<cards.length;i++){
     var c=cards[i];
     if(catId!=='all'&&c.cat!==catId) continue;
-    var reps=c.repetitions||0;
-    if(reps===0) newCards.push(c);
-    else if(c.nextReview<=now) dueReviews.push(c);
+    if(!c.lastReview){
+      newCards.push(c);
+    }else if((c.interval||0)===0){
+      if(c.nextReview<=now) relearning.push(c);
+    }else{
+      if(isSameOrEarlierDay(c.nextReview,now)) dueReviews.push(c);
+    }
   }
+  relearning.sort(function(a,b){return a.nextReview-b.nextReview;});
   dueReviews.sort(function(a,b){return a.nextReview-b.nextReview;});
   newCards.sort(function(a,b){return(a.created||0)-(b.created||0);});
-  return dueReviews.slice(0,reviewRemaining).concat(newCards.slice(0,newRemaining));
+  // یادگیری‌مجدد کوتاه‌مدت همیشه فوری و مستقل از سقف روزانه نمایش داده می‌شود (مثل Anki)
+  return relearning.concat(dueReviews.slice(0,reviewRemaining)).concat(newCards.slice(0,newRemaining));
 }
+
+var todayQueueSnapshot=[];
 
 function startStudy(catId){
   var fa=currentLang==='fa';
   // رفتار پیش‌فرض: به محض ورود به صفحه مطالعه، بدون هیچ انتخاب دستی‌ای بلافاصله شروع شود.
   // دسته‌بندی فقط از طریق کادر بالای صفحه به‌صورت اختیاری قابل تغییر است.
   if(catId===undefined) catId=currentStudyCat||'all';
+  if(catId==='__today__'){startTodayReview();return;}
   currentStudyCat=catId;
   earlyReviewMode=false;
   populateStudyCatSelect();
@@ -2653,26 +2698,52 @@ function startStudy(catId){
   showStudyCard();
 }
 
+// ===== حالت ویژه «مرور کارت‌های امروز» =====
+// برخلاف حالت عادی (که بعد از اتمام، مطالعه زودتر از موعد پیشنهاد می‌دهد)، این حالت فقط
+// دقیقاً همان مجموعه‌ای که برنامه‌ی FSRS برای «امروز» تعیین کرده را نشان می‌دهد (بدون آوردن
+// کارت‌های آینده) و بعد از اتمام، فقط گزینه‌ی «مرور دوباره‌ی همین مجموعه» را پیشنهاد می‌دهد.
+function startTodayReview(){
+  var fa=currentLang==='fa';
+  currentStudyCat='__today__';
+  earlyReviewMode=false;
+  populateStudyCatSelect();
+  studyQueue=buildStudyQueue('all');
+  todayQueueSnapshot=studyQueue.slice();
+  studyIndex=0; studyActive=studyQueue.length>0;
+  if(!studyActive){
+    $('studyArea').innerHTML='<div class="empty-state"><span class="es-icon">🎉</span><p>'+(fa?'کارتی برای امروز نمانده':'No cards left for today')+'</p></div>';
+    return;
+  }
+  showStudyCard();
+}
+
+function replayTodayReview(){
+  earlyReviewMode=true; // مثل زودتر از موعد، این تکرار هم نباید سهمیه‌ی روزانه را دوباره مصرف کند
+  studyQueue=todayQueueSnapshot.slice();
+  studyIndex=0; studyActive=studyQueue.length>0;
+  showStudyCard();
+}
+
 // ===== مطالعه زودتر از موعد (Early / Ahead-of-schedule Review) =====
-// وقتی کارت‌های امروز آن دسته تمام شد، این تابع کارت‌هایی که هنوز به موعد مرورشان نرسیده را
-// به ترتیب نزدیک‌ترین موعد (نزدیک‌ترین nextReview) تا دورترین می‌آورد تا کاربر بتواند
-// آگاهانه و اختیاری زودتر از برنامه‌ی FSRS مرور کند. کارت‌های کاملاً تازه (repetitions=0)
-// که هنوز اصلاً معرفی نشده‌اند در این حالت نمی‌آیند چون بخشی از برنامه‌ی روزانه‌ی «کارت جدید» هستند.
-// توجه: امتیاز دادن به کارت در این حالت هم مانند مرور عادی FSRS را به‌روزرسانی می‌کند
-// (interval/stability/difficulty)، پس این یک مرور واقعی است، فقط زودتر از موعد پیشنهادی انجام می‌شود.
+// دو لایه، دقیقاً مطابق درخواست: اول کارت‌هایی که قبلاً حداقل یک‌بار مرور شده‌اند و به مرحله‌ی
+// «مرور روزانه» رسیده‌اند (نه یادگیری‌مجدد کوتاه‌مدت) از نزدیک‌ترین موعد تا دورترین آورده می‌شوند.
+// وقتی این لایه هیچ کاندیدی نداشت (مثلاً یک دسته‌ی کاملاً تازه)، به‌عنوان لایه‌ی دوم کارت‌های
+// کاملاً معرفی‌نشده هم اضافه می‌شوند تا کاربر بتواند مستقل از سقف روزانه به مطالعه ادامه دهد
+// («تا آن دسته تمام شود»، طبق درخواست کاربر).
 function buildEarlyReviewQueue(catId){
-  var list=[],todayStr=getTodayStr();
+  var now=Date.now();
+  var tier1=[],tier2=[];
   for(var i=0;i<cards.length;i++){
     var c=cards[i];
     if(catId!=='all'&&c.cat!==catId) continue;
-    if((c.repetitions||0)===0) continue;
-    // کارتی که همین امروز (چه به‌صورت عادی چه زودتر از موعد) مرور شده را دوباره نیاور،
-    // وگرنه کارت‌هایی با فاصله‌ی کوتاه (مثلاً امتیاز «دوباره») بلافاصله برمی‌گردند و حلقه‌ی بی‌پایان می‌سازند
-    if(c.lastReview){var lr=new Date(c.lastReview);var lrStr=lr.getFullYear()+'-'+pad2(lr.getMonth()+1)+'-'+pad2(lr.getDate());if(lrStr===todayStr)continue;}
-    list.push(c);
+    if(!c.lastReview){tier2.push(c);continue;}
+    if((c.interval||0)===0) continue; // در حال یادگیری‌مجدد کوتاه‌مدت — جای مناسبش صف عادی است نه اینجا
+    if(isSameOrEarlierDay(c.nextReview,now)) continue; // همین امروز due است؛ قبلاً باید در صف عادی آمده باشد
+    tier1.push(c);
   }
-  list.sort(function(a,b){return a.nextReview-b.nextReview;});
-  return list;
+  tier1.sort(function(a,b){return a.nextReview-b.nextReview;});
+  tier2.sort(function(a,b){return(a.created||0)-(b.created||0);});
+  return tier1.length?tier1:tier2;
 }
 
 function startEarlyReview(catId){
@@ -2693,15 +2764,21 @@ function showStudyCard(){
     var fa=currentLang==='fa';
     var sessionCount=studyIndex;
     var catForNext=currentStudyCat||'all';
-    var earlyQueue=buildEarlyReviewQueue(catForNext);
     var actionBtn;
-    if(earlyQueue.length>0){
-      actionBtn='<button class="btn btn-primary" onclick="startEarlyReview(\''+catForNext+'\')" style="margin-top:14px">🚀 '+(fa?'کارت‌های امروز تمام شد — مطالعه زودتر از موعد':'Today\'s cards are done — study ahead')+'</button>';
+    if(catForNext==='__today__'){
+      // حالت ویژه‌ی «مرور کارت‌های امروز»: فقط گزینه‌ی تکرار همان مجموعه، بدون آوردن کارت‌های آینده
+      actionBtn='<button class="btn btn-primary" onclick="replayTodayReview()" style="margin-top:14px">🔁 '+(fa?'مرور دوباره‌ی کلمات امروز':'Review today\'s words again')+'</button>';
     }else{
-      actionBtn='<button class="btn btn-primary" onclick="startStudy()" style="margin-top:14px">'+(fa?'ادامه مطالعه':'Keep studying')+'</button>';
+      var earlyQueue=buildEarlyReviewQueue(catForNext);
+      if(earlyQueue.length>0){
+        actionBtn='<button class="btn btn-primary" onclick="startEarlyReview(\''+catForNext+'\')" style="margin-top:14px">🚀 '+(fa?'کارت‌های امروز تمام شد — مطالعه زودتر از موعد':'Today\'s cards are done — study ahead')+'</button>';
+      }else{
+        actionBtn='<button class="btn btn-primary" onclick="startStudy()" style="margin-top:14px">'+(fa?'ادامه مطالعه':'Keep studying')+'</button>';
+      }
     }
+    var titleMsg=catForNext==='__today__'?(fa?'شما همه کارت‌های امروز را مرور کردید':'You\'ve reviewed all of today\'s cards'):(fa?'آفرین! جلسه کامل شد':'Great job! Session complete');
     area.innerHTML='<div class="empty-state"><span class="es-icon" style="font-size:86px;animation:confettiBounce 1.5s ease-in-out infinite">🎉</span>'
-      +'<p style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">'+(fa?'آفرین! جلسه کامل شد':'Great job! Session complete')+'</p>'
+      +'<p style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">'+titleMsg+'</p>'
       +'<p style="color:var(--text2);font-size:14px;margin-bottom:6px">'+(fa?'ذهنت قوی‌تر شد 🧠':'Your brain got stronger 🧠')+'</p>'
       +'<div class="stats-grid" style="grid-template-columns:repeat(2,1fr);margin-top:8px;max-width:320px;margin-left:auto;margin-right:auto">'
       +'<div class="stat-card"><div class="stat-val" style="font-size:28px">'+sessionCount+'</div><div class="stat-label">'+(fa?'مرور شد':'Reviewed')+'</div></div>'
@@ -3385,7 +3462,7 @@ function getQuizCards(source,cat,count){
     if(cat!=='all'&&c.cat!==cat)return false;
     if(source==='today')return c.created>=today.getTime();
     if(source==='week')return c.created>=weekAgo;
-    if(source==='due')return c.nextReview<=now;
+    if(source==='due')return isSameOrEarlierDay(c.nextReview,now);
     if(source==='wrong'){
       try{var qh=JSON.parse(localStorage.getItem(QUIZ_KEY)||'{}');return qh[c.id]&&qh[c.id].wrong>0;}catch(e){return false;}
     }
@@ -3700,7 +3777,7 @@ function updateStats(){
   var due=0,doneToday=0;
   for(var i=0;i<cards.length;i++){
     var c=cards[i];
-    if(c.nextReview<=now)due++;
+    if(isSameOrEarlierDay(c.nextReview,now))due++;
     if(c.lastReview&&c.lastReview>=todayMs)doneToday++;
   }
   var streak=0,msDay=86400000;
@@ -3982,7 +4059,7 @@ function handleBackupRestore(e){
 // ===== DATA OPERATIONS =====
 function updateBadges(){
   var now=Date.now(),due=0;
-  for(var i=0;i<cards.length;i++) if(cards[i].nextReview<=now)due++;
+  for(var i=0;i<cards.length;i++) if(isSameOrEarlierDay(cards[i].nextReview,now))due++;
   var dotStudy=$('dot-study');if(dotStudy){if(due>0)dotStudy.classList.add('show');else dotStudy.classList.remove('show');}
   var dotBrowse=$('dot-browse');if(dotBrowse){if(due>0)dotBrowse.classList.add('show');else dotBrowse.classList.remove('show');}
 }
