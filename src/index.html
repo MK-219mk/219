@@ -2731,11 +2731,20 @@ function replayTodayReview(){
 // کاملاً معرفی‌نشده هم اضافه می‌شوند تا کاربر بتواند مستقل از سقف روزانه به مطالعه ادامه دهد
 // («تا آن دسته تمام شود»، طبق درخواست کاربر).
 function buildEarlyReviewQueue(catId){
-  var now=Date.now();
+  var now=Date.now(),todayStr=getTodayStr();
   var tier1=[],tier2=[];
   for(var i=0;i<cards.length;i++){
     var c=cards[i];
     if(catId!=='all'&&c.cat!==catId) continue;
+    // کارتی که همین امروز (در همین نشست یا نشست‌های قبلی امروز، عادی یا زودتر از موعد) مرور شده
+    // نباید دوباره بیاید. بدون این چک، چون هر مرور موفق nextReview را حداقل یک روز جلو می‌برد،
+    // بلافاصله در فراخوانی بعدی به‌عنوان «due نبودن امروز» واجد شرایط می‌شد و حلقه می‌ساخت
+    // (باگ: «همان کلمات همان نشست دوباره می‌آیند»).
+    if(c.lastReview){
+      var lr=new Date(c.lastReview);
+      var lrStr=lr.getFullYear()+'-'+pad2(lr.getMonth()+1)+'-'+pad2(lr.getDate());
+      if(lrStr===todayStr) continue;
+    }
     if(!c.lastReview){tier2.push(c);continue;}
     if((c.interval||0)===0) continue; // در حال یادگیری‌مجدد کوتاه‌مدت — جای مناسبش صف عادی است نه اینجا
     if(isSameOrEarlierDay(c.nextReview,now)) continue; // همین امروز due است؛ قبلاً باید در صف عادی آمده باشد
